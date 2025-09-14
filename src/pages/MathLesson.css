@@ -1,0 +1,133 @@
+:root {
+  --tile-bg: rgba(255,255,255,0.04);
+  --tile-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  --tile-shadow-hover: 0 18px 36px rgba(0,0,0,0.35);
+  --tile-radius: 12px;
+  --text-primary: #e9d5ff;
+  --text-secondary: #c4b5fd;
+}
+
+.math-lesson {
+  color: var(--text-primary);
+}
+
+.math-lesson-page {
+  min-height: 100vh;
+  background: #000000 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* In case any global pixel-theme or pixel-bg adds borders, override here */
+.math-lesson-page.pixel-theme,
+.math-lesson-page.pixel-bg {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.math-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .math-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .math-grid { grid-template-columns: 1fr; }
+}
+
+.math-tile {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--tile-radius);
+  overflow: hidden;
+  background: var(--tile-bg);
+  /* removed border per request */
+  box-shadow: var(--tile-shadow);
+  position: relative;
+  will-change: transform, box-shadow;
+  transition: transform 180ms ease-out, box-shadow 200ms ease-out;
+}
+
+.math-tile.unlocked:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--tile-shadow-hover);
+}
+
+.math-thumb {
+  height: 140px;
+  width: 100%;
+  flex: 0 0 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+.math-thumb.locked {
+  filter: grayscale(0.2) brightness(1.15) saturate(1.1);
+  opacity: 0.95;
+}
+
+.math-body {
+  flex: 1 1 auto;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.math-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-height: 20px;
+  line-height: 20px;
+}
+
+.math-actions .btn {
+  display: inline-block;
+}
+
+.math-xp { display: inline-block; margin-left: 8px; }
+
+/* Shine effect */
+.math-shine {
+  position: absolute;
+  top: 0; bottom: 0; left: -80px; width: 60px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.00) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.00) 100%);
+  filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.math-tile.unlocked:hover .math-shine {
+  animation: shine-sweep 0.8s ease-out forwards;
+}
+
+@keyframes shine-sweep {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(420px); opacity: 1; }
+}
+
+/* Floating math symbols */
+.symbol {
+  position: absolute;
+  color: var(--text-secondary);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.symbol.s1 { top: 8px; left: 8px; font-size: 18px; animation: float1 3s ease-in-out infinite; }
+.symbol.s2 { bottom: 10px; right: 12px; font-size: 16px; animation: float2 3.5s ease-in-out infinite; }
+.symbol.s3 { top: 12px; right: 28px; font-size: 14px; animation: float3 2.8s ease-in-out infinite; }
+
+@keyframes float1 { 0%{ transform: translate(0,0);} 50%{ transform: translate(3px,-6px);} 100%{ transform: translate(0,0);} }
+@keyframes float2 { 0%{ transform: translate(0,0);} 50%{ transform: translate(-3px,6px);} 100%{ transform: translate(0,0);} }
+@keyframes float3 { 0%{ transform: translate(0,0);} 50%{ transform: translate(-2px,-4px);} 100%{ transform: translate(0,0);} }
+
+/* Utility */
+.center { text-align: center; }
