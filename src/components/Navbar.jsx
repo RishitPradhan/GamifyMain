@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import TranslatorWidget from "./TranslatorWidget";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -20,6 +21,7 @@ export default function Navbar() {
         </nav>
 
         <div className="nav-actions">
+          <TranslatorWidget />
           <Link to="/profile" className="profile-btn" aria-label="Profile">
             <span className="avatar" aria-hidden>👤</span>
             <span className="profile-text">Profile</span>
