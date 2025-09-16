@@ -1,0 +1,149 @@
+:root {
+  --nav-bg: #0b0720;
+  --nav-accent: #7c3aed;
+  --nav-accent-2: #a78bfa;
+  --nav-accent-3: #22d3ee;
+  --nav-text: #e5e7eb;
+  --nav-muted: #cbd5e1;
+}
+
+.app-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(500px 320px at 12% 8%, rgba(124, 58, 237, 0.05), transparent 70%),
+    radial-gradient(460px 300px at 88% 72%, rgba(236, 72, 153, 0.04), transparent 70%),
+    linear-gradient(180deg, rgba(5, 5, 10, 0.95), rgba(5, 5, 10, 0.88));
+  backdrop-filter: blur(3px) saturate(125%);
+  -webkit-backdrop-filter: blur(3px) saturate(125%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), 0 0 6px rgba(139, 92, 246, 0.06), 0 0 6px rgba(236, 72, 153, 0.05);
+}
+
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.brand {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--nav-text);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+.brand-logo { display: none; }
+.brand-text {
+  font-size: 16px;
+  color: #c9c3ff; /* soft lavender on black */
+  text-shadow: 0 0 4px rgba(139, 92, 246, 0.14);
+  letter-spacing: 0.5px;
+}
+
+.nav-links {
+  display: none;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .nav-links { display: flex; gap: 12px; align-items: center; }
+}
+
+.nav-link {
+  color: rgba(201, 195, 255, 0.85);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  text-transform: none;
+}
+.nav-link:hover {
+  color: #FFD700;
+  background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(236,72,153,0.10));
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+  transform: translateY(-2px);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-btn {
+  color: #ffe7e7;
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+.logout-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(239, 68, 68, 0.35);
+  filter: brightness(1.05);
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d6ccff;
+  background: linear-gradient(135deg, rgba(124,58,237,0.28), rgba(236,72,153,0.22));
+  border: 1px solid rgba(167,139,250,0.28);
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(17, 12, 28, 0.35), inset 0 0 0 1px rgba(139, 92, 246, 0.08);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+.profile-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(17, 12, 28, 0.45), inset 0 0 0 1px rgba(167, 139, 250, 0.16);
+}
+.avatar {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(236,72,153,0.25));
+}
+
+/* Navbar Animations */
+/* removed heavy glow and spin animations */
+
+/* Enhanced hover effects */
+.brand:hover {
+  transform: scale(1.05);
+}
+
+.brand:hover .brand-logo { box-shadow: none; }
+
+/* Custom translator widget styles are in TranslatorWidget.css */

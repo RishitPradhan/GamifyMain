@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+.rewards-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(124, 58, 237, 0.18), transparent 60%),
+    radial-gradient(1000px 700px at 85% 80%, rgba(236, 72, 153, 0.14), transparent 60%),
+    linear-gradient(180deg, #0b0820 0%, #130b2f 40%, #0a061a 100%);
+  color: #fff;
+  font-family: 'VT323', monospace;
+}
+
+.rewards-container { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+.rewards-title { font-family: 'Press Start 2P', cursive; letter-spacing: 1px; text-align: center; margin: 8px 0 24px; text-shadow: 0 0 14px rgba(139,92,246,0.35); }
+
+.glass {
+  background: rgba(13, 11, 32, 0.35);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 38px rgba(17, 12, 28, 0.38), 0 0 0 1px rgba(139, 92, 246, 0.08) inset;
+}
+
+.rewards-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; padding: 16px; margin-bottom: 20px; }
+.summary-card { text-align: center; padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.08); }
+.summary-label { font-family: 'Press Start 2P', cursive; letter-spacing: 1px; font-size: 12px; opacity: 0.9; }
+.summary-value { font-size: 22px; font-weight: 800; margin-top: 6px; text-shadow: 0 0 10px rgba(139,92,246,0.4); }
+.summary-actions { display: flex; align-items: center; justify-content: center; }
+
+.rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; padding: 16px; }
+.reward-item { padding: 16px; border: 1px solid rgba(255,255,255,0.14); border-radius: 16px; background: rgba(13,11,32,0.35); display: grid; gap: 8px; }
+.reward-icon { font-size: 32px; }
+.reward-name { font-weight: 800; letter-spacing: 0.5px; }
+.reward-desc { opacity: 0.9; font-size: 0.95rem; }
+.reward-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.reward-cost { font-weight: 700; opacity: 0.9; }
+
+/* Reuse start-btn theme */
+.start-btn.alt { background: transparent; border: 2px solid rgba(167,139,250,0.6); }
