@@ -6,9 +6,61 @@ import { useProgress } from "../contexts/ProgressContext";
 import NetworkStatusIndicator from "../components/NetworkStatusIndicator";
 import './Home.css';
 
+// Lightweight inline SVG icon set (no external deps)
+function Icon({ name, size = 18 }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" };
+  const strokeProps = { stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (name) {
+    case 'home':
+      return (
+        <svg {...common}><path {...strokeProps} d="M3 11l9-7 9 7"/><path {...strokeProps} d="M9 22V12h6v10"/></svg>
+      );
+    case 'quiz':
+      return (
+        <svg {...common}><path {...strokeProps} d="M4 4h16v12H4z"/><path {...strokeProps} d="M8 20h8"/><path {...strokeProps} d="M9 8h6M9 11h4"/></svg>
+      );
+    case 'bolt':
+      return (
+        <svg {...common}><path {...strokeProps} d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+      );
+    case 'gift':
+      return (
+        <svg {...common}><path {...strokeProps} d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path {...strokeProps} d="M2 7h20v5H2z"/><path {...strokeProps} d="M12 22V7"/><path {...strokeProps} d="M12 7s-2.5-5 2-5c2 0 2 2 2 2s2-2 4 0c2 2-2 3-2 3H12z"/></svg>
+      );
+    case 'trophy':
+      return (
+        <svg {...common}><path {...strokeProps} d="M8 21h8"/><path {...strokeProps} d="M12 17v4"/><path {...strokeProps} d="M18 3H6v5a6 6 0 0 0 12 0V3z"/><path {...strokeProps} d="M5 7H4a3 3 0 0 1-3-3V3h4v4zM19 7h1a3 3 0 0 0 3-3V3h-4v4z"/></svg>
+      );
+    case 'chart':
+      return (
+        <svg {...common}><path {...strokeProps} d="M3 3v18h18"/><path {...strokeProps} d="M7 13v5"/><path {...strokeProps} d="M12 9v9"/><path {...strokeProps} d="M17 5v13"/></svg>
+      );
+    case 'user':
+      return (
+        <svg {...common}><path {...strokeProps} d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5z"/><path {...strokeProps} d="M4 21a8 8 0 0 1 16 0"/></svg>
+      );
+    case 'note':
+      return (
+        <svg {...common}><path {...strokeProps} d="M4 3h12l4 4v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path {...strokeProps} d="M14 3v6h6"/></svg>
+      );
+    case 'controller':
+      return (
+        <svg {...common}><path {...strokeProps} d="M6 14l-2 2a3 3 0 0 1-4-3l2-7a4 4 0 0 1 4-3h8a4 4 0 0 1 4 3l2 7a3 3 0 0 1-4 3l-2-2H8z"/><path {...strokeProps} d="M8 12h-3M6.5 10.5v3"/><circle {...strokeProps} cx="16.5" cy="10.5" r="1"/><circle {...strokeProps} cx="19" cy="12.5" r="1"/></svg>
+      );
+    case 'star':
+      return (
+        <svg {...common}><path {...strokeProps} d="M12 2l2.9 5.9L21 9.3l-4.5 4.4L17.8 21 12 17.8 6.2 21l1.3-7.3L3 9.3l6.1-1.4L12 2z"/></svg>
+      );
+    default:
+      return null;
+  }
+}
+
 export default function Home() {
   const [selectedClass, setSelectedClass] = useState("8");
   const [activeSection, setActiveSection] = useState("student");
+  // Sidebar open/close state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { user } = useAuth();
   const { studentProgress, loading, getBadge, isNewUser, setMeta } = useProgress();
   
@@ -99,12 +151,27 @@ export default function Home() {
     setDailyActive(true);
   };
 
+  // Compute active XP multiplier (e.g., Double XP boosts) and prune expired boosts
+  const getActiveXPMultiplier = () => {
+    const boosts = Array.isArray(studentProgress?.boosts) ? studentProgress.boosts : [];
+    const now = Date.now();
+    const active = boosts.filter(b => !b.expiresAt || b.expiresAt > now);
+    // If any boost expired, prune it
+    if (active.length !== boosts.length) {
+      setMeta({ boosts: active });
+    }
+    // Double XP boost id
+    const hasDouble = active.some(b => b.id === 'double-xp-1h');
+    return hasDouble ? 2 : 1;
+  };
+
   const submitDaily = () => {
     // Require all answered
     if (dailyQs.some((q) => dailyAns[q.id] === undefined)) return;
     const score = dailyQs.reduce((acc, q) => acc + (dailyAns[q.id] === q.correct ? 1 : 0), 0);
     setDailyScore(score);
     const today = todayStr();
+    const mult = getActiveXPMultiplier();
     if (studentProgress?.dailyChallengeDate !== today) {
       const prevDate = studentProgress?.dailyChallengeDate;
       const yesterday = new Date();
@@ -112,14 +179,14 @@ export default function Home() {
       const yStr = yesterday.toISOString().slice(0,10);
       const newStreak = prevDate === yStr ? Math.max(1, (studentProgress?.streak || 0) + 1) : 1;
       setMeta({
-        totalXP: (studentProgress?.totalXP || 0) + DAILY_CHALLENGE_XP,
+        totalXP: (studentProgress?.totalXP || 0) + DAILY_CHALLENGE_XP * mult,
         dailyChallengeDate: today,
         streak: newStreak,
       });
     }
     setDailyDone(true);
     setDailyActive(false);
-    pushRecent('⚡', `Completed daily challenge (${score}/3) +${DAILY_CHALLENGE_XP} XP`);
+    pushRecent('⚡', `Completed daily challenge (${score}/3) +${DAILY_CHALLENGE_XP * mult} XP${mult>1?' (Boost x'+mult+')':''}`);
   };
   const writeProgressLS = (obj) => {
     if (!progressKey) return;
@@ -207,7 +274,7 @@ export default function Home() {
       icon: "🧪",
       gradient: "linear-gradient(135deg, #6b46c1 0%, #7c3aed 100%)",
       description: "Discover the secrets of the universe!",
-      gameElements: ["⚗️", "🔬", "🧬", "⚡", "🌟"],
+      gameElements: ['✨','🔭','🧬'],
       funFact: "Did you know? Lightning is 5x hotter than the Sun!\nA single bolt contains 5 billion joules of energy!",
       level: "Apprentice Scientist",
       xp: 150
@@ -218,7 +285,7 @@ export default function Home() {
       icon: "🎯",
       gradient: "linear-gradient(135deg, #7c3aed 0%, #9f7aea 100%)",
       description: "Solve puzzles and unlock the power of numbers!",
-      gameElements: ["🎲", "🧮", "📊", "🎪", "💎"],
+      gameElements: ['➗','➕','🌟'],
       funFact: "Math is everywhere - even in video games!\nEvery pixel on your screen uses coordinates!",
       level: "Number Ninja",
       xp: 200
@@ -261,8 +328,74 @@ export default function Home() {
   }
 
   return (
-    <div className="home-dashboard">
+    <div className={`home-dashboard ${isSidebarOpen ? 'sidebar-open' : ''}`}>
       {/* Global Navbar is used; no local navbar here */}
+
+      {/* Pixel Sidebar */}
+      <motion.aside
+        className={`pixel-sidebar ${isSidebarOpen ? 'open' : 'closed'}`}
+        initial={false}
+        animate={{ width: isSidebarOpen ? 240 : 68 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+      >
+        <div className="sidebar-header">
+          <button
+            className="sidebar-toggle"
+            aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+            onClick={() => setIsSidebarOpen(v => !v)}
+          >
+            {isSidebarOpen ? '<<' : '>>'}
+          </button>
+          {isSidebarOpen && (
+            <div className="sidebar-brand">
+              <span className="brand-emoji"><Icon name="controller" size={18} /></span>
+              <span className="brand-text">Menu</span>
+            </div>
+          )}
+        </div>
+
+        <nav className="sidebar-nav">
+          <button className={`nav-item nav-home ${location.pathname === '/home' ? 'active' : ''}`} onClick={() => navigate('/home')}>
+            <span className="nav-ico"><Icon name="home" /></span>
+            <span className="nav-label">Home</span>
+          </button>
+          <button className={`nav-item nav-quiz ${location.pathname === '/lesson/math' || location.pathname === '/math' ? 'active' : ''}`} onClick={() => navigate('/lesson/math')}>
+            <span className="nav-ico"><Icon name="quiz" /></span>
+            <span className="nav-label">Quizzes</span>
+          </button>
+          <button className={`nav-item nav-daily ${(location.pathname === '/home' && location.hash === '#daily-challenge') ? 'active' : ''}`} onClick={() => navigate('/home#daily-challenge')}>
+            <span className="nav-ico"><Icon name="bolt" /></span>
+            <span className="nav-label">Daily</span>
+          </button>
+          <button className={`nav-item nav-rewards ${location.pathname === '/rewards' ? 'active' : ''}`} onClick={() => navigate('/rewards')}>
+            <span className="nav-ico"><Icon name="gift" /></span>
+            <span className="nav-label">Rewards</span>
+          </button>
+          <button className={`nav-item nav-achievements ${location.pathname === '/achievements' ? 'active' : ''}`} onClick={() => navigate('/achievements')}>
+            <span className="nav-ico"><Icon name="trophy" /></span>
+            <span className="nav-label">Achievements</span>
+          </button>
+          <button className={`nav-item nav-leaderboard ${location.pathname === '/leaderboard' ? 'active' : ''}`} onClick={() => navigate('/leaderboard')}>
+            <span className="nav-ico"><Icon name="chart" /></span>
+            <span className="nav-label">Leaderboard</span>
+          </button>
+          <button className={`nav-item nav-profile ${location.pathname === '/profile' ? 'active' : ''}`} onClick={() => navigate('/profile')}>
+            <span className="nav-ico"><Icon name="user" /></span>
+            <span className="nav-label">Profile</span>
+          </button>
+          <button className={`nav-item nav-notes ${location.pathname === '/notes' ? 'active' : ''}`} onClick={() => navigate('/notes')}>
+            <span className="nav-ico"><Icon name="note" /></span>
+            <span className="nav-label">Notes</span>
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="xp-chip">
+            <span className="xp-ico"><Icon name="star" /></span>
+            <span className="xp-val">{studentProgress?.totalXP ?? 0} XP</span>
+          </div>
+        </div>
+      </motion.aside>
 
       {/* VIP Hero: Greeting + XP snapshot + Continue CTA */}
       <motion.section
@@ -359,7 +492,7 @@ export default function Home() {
               <h3 className="class-selection-title">
                 <span className="title-icon">🎯</span>
                 Select Your Class
-                <span className="title-decoration">⚡</span>
+                <span className="title-decoration"></span>
               </h3>
               <div className="dropdown-container">
                 <select 
@@ -395,35 +528,7 @@ export default function Home() {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSubjectClick(subject.key)}
                   >
-                    {/* Floating Game Elements */}
-                    <div className="floating-game-elements">
-                      {subject.gameElements.map((element, i) => (
-                        <motion.div
-                          key={i}
-                          className="floating-element"
-                          initial={{ opacity: 0, scale: 0 }}
-                          animate={{ 
-                            opacity: [0.3, 0.7, 0.3],
-                            scale: [0.8, 1.2, 0.8],
-                            rotate: [0, 360]
-                          }}
-                          transition={{
-                            duration: 3 + i * 0.5,
-                            repeat: Infinity,
-                            delay: i * 0.3
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: `${20 + i * 15}%`,
-                            right: `${10 + i * 8}%`,
-                            fontSize: '1.2rem',
-                            zIndex: 1
-                          }}
-                        >
-                          {element}
-                        </motion.div>
-                      ))}
-                    </div>
+                    {/* Floating Game Elements removed as requested */}
 
                     {/* Level and XP Display */}
                     <div className="game-stats">
@@ -767,7 +872,6 @@ export default function Home() {
             </motion.div>
           </motion.div>
           <NetworkStatusIndicator />
-          <div className="bottom-left-mask" />
         </div>
       );
     }

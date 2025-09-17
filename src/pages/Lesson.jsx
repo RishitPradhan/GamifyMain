@@ -2,33 +2,18 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ScienceAdventureLab() {
-  const [showCards, setShowCards] = useState(false);
+  const [showCards, setShowCards] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [hoveredCard, setHoveredCard] = useState(null);
   const [sparkles, setSparkles] = useState([]);
 
   useEffect(() => {
-    const generateSparkles = () => {
-      const newSparkles = Array.from({ length: 15 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: Math.random() * 20 + 10,
-        delay: Math.random() * 5,
-        duration: Math.random() * 3 + 2,
-      }));
-      setSparkles(newSparkles);
-    };
-
-    generateSparkles();
-    const interval = setInterval(generateSparkles, 10000);
-    return () => clearInterval(interval);
+    // Keep the page calm: no animated sparkles
+    setSparkles([]);
   }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => setShowCards(true), 300);
-    return () => clearTimeout(t);
-  }, []);
+  // Cards are visible immediately to reduce motion
+  useEffect(() => {}, []);
 
   const chapters = useMemo(() => [
     { title: 'Crop Production and Management', category: 'Biology', icon: '🌱', status: 'locked', link: '/chapter1', pdfLink: '/pdfs/chapter1.pdf' },
@@ -54,11 +39,11 @@ export default function ScienceAdventureLab() {
   };
 
   return (
-    <div className="sal-root">
+    <div className="sal-root" style={{ paddingTop: 96 }}>
       <div className="background-container">
-        {/* Premium Animated Background */}
+        {/* Premium Background (animations disabled for a cleaner look) */}
         <div className="premium-bg-layer"></div>
-        <div className="particle-system">
+        <div className="particle-system" style={{ display: 'none' }}>
           {[...Array(50)].map((_, i) => (
             <div key={i} className="bg-particle" style={{
               left: `${Math.random() * 100}%`,
@@ -68,7 +53,7 @@ export default function ScienceAdventureLab() {
             }}></div>
           ))}
         </div>
-        <div className="floating-shapes">
+        <div className="floating-shapes" style={{ display: 'none' }}>
           {sparkles.map((sparkle) => (
             <div
               key={sparkle.id}
@@ -101,7 +86,7 @@ export default function ScienceAdventureLab() {
       </div>
 
       <header className="header premium-header">
-        <div className="title-container premium-title-container">
+        <div className="title-container premium-title-container" style={{ alignItems: 'flex-start', textAlign: 'left' }}>
           <div className="title-glow-effect"></div>
           <h1 className="main-title premium-title">
             <span className="title-emoji premium-emoji">🌟</span>
@@ -113,25 +98,16 @@ export default function ScienceAdventureLab() {
             <span className="deco-item premium-deco">⚗</span>
             <span className="deco-item premium-deco">🧪</span>
           </div>
-          <div className="title-particles">
-            {[...Array(20)].map((_, i) => (
-              <div key={i} className="title-particle" style={{
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 3}s`
-              }}></div>
-            ))}
-          </div>
+          {/* Title particles disabled to reduce motion */}
         </div>
-        <p className="subtitle premium-subtitle">Discover, Learn, and Have Fun with Science!</p>
-        <div className="interactive-badges premium-badges">
-          <span className="badge pulse premium-badge">🎮 Play & Learn</span>
-          <span className="badge pulse premium-badge" style={{ animationDelay: '1s' }}>🏆 Earn Badges</span>
-          <span className="badge pulse premium-badge" style={{ animationDelay: '2s' }}>🌍 Explore Worlds</span>
-          <span className="badge pulse premium-badge" style={{ animationDelay: '3s' }}>⚡ Power Up</span>
+        <p className="subtitle premium-subtitle" style={{ textAlign: 'left', alignSelf: 'stretch' }}>Discover, Learn, and Have Fun with Science!</p>
+        <div className="interactive-badges premium-badges" style={{ justifyContent: 'flex-start' }}>
+          <span className="badge premium-badge">🎮 Play & Learn</span>
+          <span className="badge premium-badge">🏆 Earn Badges</span>
         </div>
       </header>
 
-      <div className="tab-bar">
+      <div className="tab-bar" style={{ justifyContent: 'flex-start' }}>
         {['All', 'Physics', 'Biology', 'Earth', 'Chemistry'].map((tab, index) => (
           <button
             key={tab}
@@ -151,10 +127,8 @@ export default function ScienceAdventureLab() {
           return (
             <div
               key={index}
-              className={`premium-chapter-card ${showCards ? 'visible' : ''} ${hoveredCard === index ? 'hovered' : ''}`}
-              onMouseEnter={() => handleCardHover(index)}
-              onMouseLeave={() => setHoveredCard(null)}
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className={`premium-chapter-card ${showCards ? 'visible' : ''}`}
+              style={{ transition: 'transform 120ms ease, box-shadow 120ms ease' }}
             >
               <div className="premium-card-gradient">
                 <div className="premium-card-content">
@@ -165,98 +139,30 @@ export default function ScienceAdventureLab() {
                       width="200"
                       height="120"
                       ref={el => {
-                        if (el && !el.dataset.animated) {
-                          el.dataset.animated = 'true';
+                        if (el && !el.dataset.rendered) {
+                          el.dataset.rendered = 'true';
                           const canvas = el;
                           const ctx = canvas.getContext('2d');
                           const width = canvas.width;
                           const height = canvas.height;
-                          let animFrame = 0;
-                          const particles = Array.from({length: 6}, (_, i) => ({
-                            x: Math.random() * width,
-                            y: Math.random() * height,
-                            vx: (Math.random() - 0.5) * 0.2,
-                            vy: (Math.random() - 0.5) * 0.2,
-                            size: Math.random() * 2 + 1.5,
-                            phase: i * 0.8
-                          }));
-                          
-                          const animate = () => {
-                            // Clear with deep space background
-                            const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/2);
-                            gradient.addColorStop(0, '#2d1b4e');
-                            gradient.addColorStop(0.5, '#1b1233');
-                            gradient.addColorStop(1, '#0f0820');
-                            ctx.fillStyle = gradient;
-                            ctx.fillRect(0, 0, width, height);
-                            
-                            // Subtle science grid pattern
-                            ctx.strokeStyle = `rgba(124, 58, 237, ${0.25 + Math.sin(animFrame * 0.01) * 0.1})`;
-                            ctx.lineWidth = 0.8;
-                            const gridSize = 30;
-                            
+                          // Static premium thumbnail: soft gradient + faint grid
+                          const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/2);
+                          gradient.addColorStop(0, '#2d1b4e');
+                          gradient.addColorStop(0.6, '#1b1233');
+                          gradient.addColorStop(1, '#0f0820');
+                          ctx.fillStyle = gradient;
+                          ctx.fillRect(0, 0, width, height);
+                          ctx.strokeStyle = 'rgba(124,58,237,0.25)';
+                          ctx.lineWidth = 0.8;
+                          const gridSize = 30;
+                          if (el) {
                             for (let i = 0; i < width; i += gridSize) {
-                              const x = i + Math.sin(animFrame * 0.008 + i * 0.005) * 3;
-                              ctx.beginPath();
-                              ctx.moveTo(x, 0);
-                              ctx.lineTo(x, height);
-                              ctx.stroke();
+                              ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
                             }
-                            
-                            for (let i = 0; i < height; i += gridSize) {
-                              const y = i + Math.cos(animFrame * 0.01 + i * 0.005) * 2;
-                              ctx.beginPath();
-                              ctx.moveTo(0, y);
-                              ctx.lineTo(width, y);
-                              ctx.stroke();
+                            for (let j = 0; j < height; j += gridSize) {
+                              ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(width, j); ctx.stroke();
                             }
-                            
-                            // Gentle floating particles
-                            particles.forEach((particle, i) => {
-                              particle.x += particle.vx;
-                              particle.y += particle.vy;
-                              
-                              if (particle.x < 0 || particle.x > width) particle.vx *= -1;
-                              if (particle.y < 0 || particle.y > height) particle.vy *= -1;
-                              
-                              const alpha = 0.4 + Math.sin(animFrame * 0.02 + particle.phase) * 0.2;
-                              const size = particle.size + Math.sin(animFrame * 0.025 + particle.phase) * 0.5;
-                              
-                              // Subtle particle glow
-                              const glowGradient = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, size * 2);
-                              glowGradient.addColorStop(0, `rgba(217, 70, 239, ${alpha * 0.6})`);
-                              glowGradient.addColorStop(0.7, `rgba(124, 58, 237, ${alpha * 0.3})`);
-                              glowGradient.addColorStop(1, 'rgba(217, 70, 239, 0)');
-                              
-                              ctx.fillStyle = glowGradient;
-                              ctx.beginPath();
-                              ctx.arc(particle.x, particle.y, size * 2, 0, Math.PI * 2);
-                              ctx.fill();
-                              
-                              // Core particle
-                              ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
-                              ctx.beginPath();
-                              ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
-                              ctx.fill();
-                            });
-                            
-                            // Subtle energy pulse (single wave)
-                            const radius = (animFrame * 0.3) % 80;
-                            const alpha = Math.max(0, 0.3 - (radius / 80) * 0.3);
-                            if (alpha > 0) {
-                              ctx.strokeStyle = `rgba(217, 70, 239, ${alpha})`;
-                              ctx.lineWidth = 1.5;
-                              ctx.beginPath();
-                              ctx.arc(width/2, height/2, radius, 0, Math.PI * 2);
-                              ctx.stroke();
-                            }
-                            
-                            // Canvas background complete - emoji shown in overlay only
-                            
-                            animFrame++;
-                            requestAnimationFrame(animate);
-                          };
-                          animate();
+                          }
                         }
                       }}
                     ></canvas>
@@ -311,19 +217,8 @@ export default function ScienceAdventureLab() {
                 </div>
               </div>
 
-              {/* Enhanced Particle Effects */}
-              {hoveredCard === index && (
-                <div className="card-particles premium-particles">
-                  {[...Array(12)].map((_, i) => (
-                    <div key={i} className="particle premium-particle" style={{ 
-                      animationDelay: `${i * 0.08}s`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`
-                    }}></div>
-                  ))}
-                </div>
-              )}
-              
+              {/* Hover particles removed for calmer UI */}
+
               {/* Glow Effect */}
               <div className="premium-glow-effect"></div>
             </div>

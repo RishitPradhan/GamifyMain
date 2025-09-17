@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useProgress } from "../contexts/ProgressContext";
 import "./Rewards.css";
 
 const readJSON = (k, f = null) => {
@@ -8,38 +9,86 @@ const readJSON = (k, f = null) => {
 };
 
 export default function Rewards() {
-  const userEmail = localStorage.getItem('current_user_email');
-  const progressKey = userEmail ? `student_progress_${userEmail}` : (() => {
-    for (let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if (k && k.startsWith('student_progress_')) return k; }
-    return null;
-  })();
-
-  const [balance, setBalance] = useState(() => readJSON(progressKey, {})?.totalXP || 0);
-  const [streak] = useState(() => readJSON(progressKey, {})?.streak || 0);
+  const { studentProgress, setMeta } = useProgress();
+  const balance = Number(studentProgress?.totalXP || 0);
+  const streak = Number(studentProgress?.streak || 0);
 
   const items = useMemo(() => ([
-    { id: 'hint-pack', name: 'Hint Pack', cost: 80, icon: '💡', desc: 'Unlock 5 helpful hints.' },
-    { id: 'double-xp-1h', name: 'Double XP (1h)', cost: 150, icon: '⚡', desc: '2x XP for one hour.' },
-    { id: 'avatar-frame', name: 'Avatar Frame', cost: 120, icon: '🖼️', desc: 'Shiny avatar border.' },
-    { id: 'theme-cyan', name: 'Cyan Theme', cost: 200, icon: '🎨', desc: 'Unlock cyan accent theme.' },
+    { id: 'hint-pack', name: 'Hint Pack', cost: 80, icon: '💡', desc: 'Unlock 5 helpful hints.', type: 'consumable' },
+    { id: 'double-xp-1h', name: 'Double XP (1h)', cost: 150, icon: '⚡', desc: '2x XP for one hour (demo only).', type: 'boost', durationMs: 60*60*1000 },
+    { id: 'avatar-frame', name: 'Avatar Frame', cost: 120, icon: '🖼️', desc: 'Shiny avatar border.', type: 'cosmetic', slot: 'frame' },
+    { id: 'theme-cyan', name: 'Cyan Theme', cost: 200, icon: '🎨', desc: 'Unlock cyan accent theme.', type: 'cosmetic', slot: 'theme', value: 'cyan' },
+    { id: 'profile-icon-pack', name: 'Icon Pack', cost: 90, icon: '🎯', desc: '5 new profile icons.', type: 'cosmetic', slot: 'icons', value: 'pack1' },
+    { id: 'name-glow', name: 'Name Glow', cost: 140, icon: '✨', desc: 'Adds a glow to your name.', type: 'cosmetic', slot: 'nameGlow', value: true },
+    { id: 'bg-motif', name: 'BG Motif', cost: 160, icon: '🌈', desc: 'Unlock a subtle background motif.', type: 'cosmetic', slot: 'bg', value: 'motif1' },
   ]), []);
 
-  const writeProgress = (obj) => { if (!progressKey) return; localStorage.setItem(progressKey, JSON.stringify(obj)); };
-
   const pushRecent = (text) => {
-    if (!progressKey) return;
-    const key = `ach_recent_${(progressKey||'').replace('student_progress_','')}`;
-    try { const arr = readJSON(key, []); arr.unshift({ icon: '🎁', text, ts: Date.now() }); localStorage.setItem(key, JSON.stringify(arr.slice(0,20))); } catch {}
+    try {
+      const key = 'ach_recent_global';
+      const arr = readJSON(key, []);
+      arr.unshift({ icon: '🎁', text, ts: Date.now() });
+      localStorage.setItem(key, JSON.stringify(arr.slice(0, 20)));
+    } catch {}
   };
 
-  const handleRedeem = (item) => {
-    const p = readJSON(progressKey, {});
-    const current = p.totalXP || 0;
-    if (current < item.cost) return;
-    const newP = { ...p, totalXP: current - item.cost };
-    writeProgress(newP);
-    setBalance(current - item.cost);
-    pushRecent(`Redeemed ${item.name} (-${item.cost} XP)`);
+  const [redeemingId, setRedeemingId] = useState(null);
+  const handleRedeem = async (item) => {
+    if (balance < item.cost) return;
+    setRedeemingId(item.id);
+    try {
+      const now = Date.now();
+      const already = Array.isArray(studentProgress?.redeemed) ? studentProgress.redeemed : [];
+      const nextBase = { totalXP: Math.max(0, balance - item.cost), redeemed: [...already, { id: item.id, at: now }] };
+
+      // Apply side effects based on item type
+      const settings = { ...(studentProgress?.settings || {}) };
+      const boosts = Array.isArray(studentProgress?.boosts) ? studentProgress.boosts : [];
+      let hints = Number(studentProgress?.hints || 0);
+      if (item.type === 'consumable' && item.id === 'hint-pack') {
+        hints += 5;
+      }
+      if (item.type === 'boost' && item.id === 'double-xp-1h') {
+        const expiresAt = now + (item.durationMs || 0);
+        boosts.push({ id: item.id, expiresAt });
+      }
+      if (item.type === 'cosmetic') {
+        // Ownable cosmetic; mark owned and auto-equip
+        settings.owned = Array.isArray(settings.owned) ? settings.owned : [];
+        if (!settings.owned.includes(item.id)) settings.owned.push(item.id);
+        if (item.slot === 'theme') settings.theme = item.value;
+        else if (item.slot === 'frame') settings.frame = true;
+        else if (item.slot === 'icons') settings.iconPack = item.value;
+        else if (item.slot === 'nameGlow') settings.nameGlow = true;
+        else if (item.slot === 'bg') settings.backgroundMotif = item.value;
+      }
+
+      setMeta({ ...nextBase, settings, boosts, hints });
+      pushRecent(`Redeemed ${item.name} (-${item.cost} XP)`);
+    } finally {
+      setRedeemingId(null);
+    }
+  };
+
+  const isOwned = (id) => Array.isArray(studentProgress?.settings?.owned) && studentProgress.settings.owned.includes(id);
+  const isEquipped = (item) => {
+    const s = studentProgress?.settings || {};
+    if (item.slot === 'theme') return s.theme === item.value;
+    if (item.slot === 'frame') return !!s.frame;
+    if (item.slot === 'icons') return s.iconPack === item.value;
+    if (item.slot === 'nameGlow') return !!s.nameGlow;
+    if (item.slot === 'bg') return s.backgroundMotif === item.value;
+    return false;
+  };
+  const handleEquip = (item) => {
+    if (!isOwned(item.id)) return;
+    const s = { ...(studentProgress?.settings || {}) };
+    if (item.slot === 'theme') s.theme = item.value;
+    if (item.slot === 'frame') s.frame = true;
+    if (item.slot === 'icons') s.iconPack = item.value;
+    if (item.slot === 'nameGlow') s.nameGlow = true;
+    if (item.slot === 'bg') s.backgroundMotif = item.value;
+    setMeta({ settings: s });
   };
 
   return (
@@ -71,9 +120,21 @@ export default function Rewards() {
               <div className="reward-desc">{it.desc}</div>
               <div className="reward-bottom">
                 <div className="reward-cost">{it.cost} XP</div>
-                <button className="start-btn" disabled={balance < it.cost} onClick={() => handleRedeem(it)}>
-                  {balance < it.cost ? 'Not enough XP' : 'Redeem'}
-                </button>
+                {it.type === 'cosmetic' ? (
+                  isOwned(it.id) ? (
+                    <button className="start-btn redeem-btn" onClick={() => handleEquip(it)} disabled={isEquipped(it)}>
+                      {isEquipped(it) ? 'Equipped' : 'Equip'}
+                    </button>
+                  ) : (
+                    <button className="start-btn redeem-btn" disabled={balance < it.cost || redeemingId === it.id} onClick={() => handleRedeem(it)}>
+                      {redeemingId === it.id ? 'Redeeming...' : balance < it.cost ? 'Not enough XP' : 'Redeem'}
+                    </button>
+                  )
+                ) : (
+                  <button className="start-btn redeem-btn" disabled={balance < it.cost || redeemingId === it.id} onClick={() => handleRedeem(it)}>
+                    {redeemingId === it.id ? 'Redeeming...' : balance < it.cost ? 'Not enough XP' : 'Redeem'}
+                  </button>
+                )}
               </div>
             </div>
           ))}

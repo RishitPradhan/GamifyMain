@@ -13,6 +13,7 @@ import Achievements from './pages/Achievements'
 import Leaderboard from './pages/Leaderboard'
 import TeacherDashboard from './pages/TeacherDashboard'
 import Profile from './pages/Profile'
+import NotesPanel from './pages/NotesPanel'
 import Navbar from './components/Navbar'
 import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
@@ -55,6 +56,7 @@ return (
 <Route path="/leaderboard" element={<Leaderboard />} />
 <Route path="/dashboard" element={<TeacherDashboard />} />
 <Route path="/profile" element={<Profile />} />
+<Route path="/notes" element={<NotesPanel />} />
 <Route path="/subject/:subjectKey" element={<SubjectDetail />} />
 </Routes>
 </div>

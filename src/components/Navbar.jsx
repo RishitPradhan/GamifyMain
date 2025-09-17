@@ -1,7 +1,8 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import TranslatorWidget from "./TranslatorWidget";
+import BackButton from "./BackButton";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -14,12 +15,24 @@ export default function Navbar() {
           <span className="brand-text">GAMIFY</span>
         </Link>
 
-        <nav className="links" aria-label="Primary">
-          <Link to="/home" className="nav-link">Home</Link>
-          <Link to="/dashboard" className="nav-link">Teacher</Link>
+        <nav className="nav-links" aria-label="Primary">
+          <NavLink
+            to="/home"
+            className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+            end
+          >
+            Home
+          </NavLink>
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+          >
+            Teacher
+          </NavLink>
         </nav>
 
         <div className="nav-actions">
+          <BackButton />
           <TranslatorWidget />
           <Link to="/profile" className="profile-btn" aria-label="Profile">
             <span className="avatar" aria-hidden>👤</span>
