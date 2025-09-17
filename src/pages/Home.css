@@ -545,6 +545,29 @@
 .challenge-desc { opacity: 0.9; margin: 6px 0 12px; }
 .challenge-actions { display: flex; gap: 8px; }
 
+/* Daily Challenge: clean option buttons */
+.daily-questions { margin-top: 8px; }
+.daily-question { padding: 10px 0; }
+.daily-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(13,11,32,0.35);
+  color: #fff;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, transform 120ms ease;
+  font-size: 1.1rem; /* larger text */
+}
+.daily-choice:hover { background: rgba(13,11,32,0.45); border-color: rgba(255,255,255,0.24); transform: translateY(-1px); }
+.daily-choice.selected { border-color: rgba(99,102,241,0.6); box-shadow: 0 0 0 3px rgba(99,102,241,0.25) inset; }
+.daily-choice .choice-letter { font-weight: 800; opacity: 0.95; }
+.daily-choice .choice-text { opacity: 0.98; }
+
 /* Achievements */
 .vip-achievements { padding: 18px 20px; margin: 24px 0; }
 .achievements-title { font-family: 'Press Start 2P', cursive; letter-spacing: 1px; margin-bottom: 10px; }

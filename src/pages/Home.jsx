@@ -10,7 +10,7 @@ export default function Home() {
   const [selectedClass, setSelectedClass] = useState("8");
   const [activeSection, setActiveSection] = useState("student");
   const { user } = useAuth();
-  const { studentProgress, loading, getBadge, isNewUser } = useProgress();
+  const { studentProgress, loading, getBadge, isNewUser, setMeta } = useProgress();
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,10 +79,8 @@ export default function Home() {
   const [dailyAns, setDailyAns] = useState({});
   const [dailyScore, setDailyScore] = useState(null);
   useEffect(() => {
-    const p = readProgressLS();
-    setDailyDone(p.dailyChallengeDate === todayStr());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progressKey]);
+    setDailyDone(studentProgress?.dailyChallengeDate === todayStr());
+  }, [studentProgress?.dailyChallengeDate]);
 
   const handleDailyStart = () => {
     // Build 3 random questions (math & science)
@@ -106,14 +104,18 @@ export default function Home() {
     if (dailyQs.some((q) => dailyAns[q.id] === undefined)) return;
     const score = dailyQs.reduce((acc, q) => acc + (dailyAns[q.id] === q.correct ? 1 : 0), 0);
     setDailyScore(score);
-    const p = readProgressLS();
-    if (p.dailyChallengeDate !== todayStr()) {
-      const newP = {
-        ...p,
-        totalXP: (p.totalXP || 0) + DAILY_CHALLENGE_XP,
-        dailyChallengeDate: todayStr(),
-      };
-      writeProgressLS(newP);
+    const today = todayStr();
+    if (studentProgress?.dailyChallengeDate !== today) {
+      const prevDate = studentProgress?.dailyChallengeDate;
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().slice(0,10);
+      const newStreak = prevDate === yStr ? Math.max(1, (studentProgress?.streak || 0) + 1) : 1;
+      setMeta({
+        totalXP: (studentProgress?.totalXP || 0) + DAILY_CHALLENGE_XP,
+        dailyChallengeDate: today,
+        streak: newStreak,
+      });
     }
     setDailyDone(true);
     setDailyActive(false);
@@ -137,32 +139,6 @@ export default function Home() {
   };
 
   const todayStr = () => new Date().toISOString().slice(0,10);
-  const [canClaim, setCanClaim] = useState(true);
-
-  useEffect(() => {
-    const p = readProgressLS();
-    const lastClaim = p.lastClaimDate;
-    setCanClaim(!lastClaim || lastClaim !== todayStr());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [progressKey]);
-
-  const DAILY_REWARD_XP = 100;
-  const handleClaimDaily = () => {
-    const p = readProgressLS();
-    const lastClaim = p.lastClaimDate;
-    if (lastClaim === todayStr()) return; // already claimed
-    // increment a simple xp field; if not present, create
-    const currentXP = p.totalXP || 0;
-    const newP = {
-      ...p,
-      totalXP: currentXP + DAILY_REWARD_XP,
-      lastClaimDate: todayStr(),
-      streak: Math.max(1, (p.streak || 0)) // keep streak nonzero if claim occurs
-    };
-    writeProgressLS(newP);
-    setCanClaim(false);
-    pushRecent('🎁', `Claimed daily reward +${DAILY_REWARD_XP} XP`);
-  };
 
   // Get all registered students' data from localStorage
   const getAllStudentsData = () => {
@@ -553,28 +529,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Streak + Goals */}
-            <motion.section
-              className="vip-streak-goals"
-              id="streak"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="vip-streak glass-card">
-                <div className="streak-left">
-                  <div className="streak-title">Daily Streak</div>
-                  <div className="streak-value">{studentProgress?.streak ?? 0} 🔥</div>
-                </div>
-                <div className="streak-right">
-                  <div className="streak-goal">Goal: {studentProgress?.dailyGoalXP ?? 100} XP</div>
-                  <button className="start-btn alt" onClick={handleClaimDaily} disabled={!canClaim}>
-                    {canClaim ? 'Claim' : 'Claimed'}
-                  </button>
-                </div>
-              </div>
-            </motion.section>
+            {/* Streak section removed as requested */}
 
             {/* Daily Challenge */}
             <motion.section
@@ -590,10 +545,63 @@ export default function Home() {
                 <div className="challenge-reward">+50 XP</div>
               </div>
               <p className="challenge-desc">Answer 3 quick questions to keep your streak alive!</p>
-              <div className="challenge-actions">
-                <button className="start-btn" onClick={handleDailyStart} disabled={dailyDone}>{dailyDone ? 'Completed' : 'Start'}</button>
-                <button className="start-btn alt" onClick={() => pushRecent('⏭️','Skipped daily challenge')}>Skip</button>
-              </div>
+              {dailyDone && dailyScore !== null && (
+                <div className="challenge-result" style={{ marginBottom: 12 }}>
+                  You scored {dailyScore}/3 today. Great job!
+                </div>
+              )}
+              {dailyActive ? (
+                <>
+                  <div className="daily-questions" style={{ marginTop: 12 }}>
+                    {dailyQs.map((q, qi) => (
+                      <div key={q.id} className="daily-question" style={{ marginBottom: 12 }}>
+                        <div className="question-text" style={{ fontWeight: 600, marginBottom: 8 }}>{qi + 1}. {q.q}</div>
+                        <div className="choices" style={{ display: 'grid', gap: 8 }}>
+                          {q.choices.map((choice, idx) => {
+                            const selected = dailyAns[q.id] === idx;
+                            return (
+                              <button
+                                key={idx}
+                                className={`daily-choice ${selected ? 'selected' : ''}`}
+                                onClick={() => setDailyAns(prev => ({ ...prev, [q.id]: idx }))}
+                              >
+                                <span className="choice-letter">{String.fromCharCode(65 + idx)}.</span>
+                                <span className="choice-text">{choice}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="challenge-actions" style={{ marginTop: 8 }}>
+                    <button
+                      className="start-btn"
+                      onClick={submitDaily}
+                      disabled={dailyQs.some(q => dailyAns[q.id] === undefined)}
+                    >
+                      Submit Answers
+                    </button>
+                    <button
+                      className="start-btn alt"
+                      onClick={() => { setDailyActive(false); setDailyQs([]); setDailyAns({}); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="challenge-actions">
+                  <button
+                    className="start-btn"
+                    onClick={() => { handleDailyStart(); pushRecent('⚡','Started daily challenge'); }}
+                    disabled={dailyDone}
+                  >
+                    {dailyDone ? 'Completed' : 'Start'}
+                  </button>
+                  <button className="start-btn alt" onClick={() => pushRecent('⏭️','Skipped daily challenge')}>Skip</button>
+                </div>
+              )}
             </motion.section>
 
             {/* Achievements Carousel */}
