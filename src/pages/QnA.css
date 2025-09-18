@@ -1,0 +1,37 @@
+:root {
+  --qna-accent: #7c3aed;
+  --qna-accent-2: #22d3ee;
+}
+
+.qna-page, .qna-page * {
+  font-family: var(--font-ui, Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji");
+  color: var(--text-high, #e7e7ef);
+}
+
+.qna-page .glass-card {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px;
+}
+
+.qna-page h2, .qna-page h3, .qna-page h4 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.qna-page input::placeholder,
+.qna-page textarea::placeholder {
+  color: rgba(231,231,239,0.55);
+}
+
+.qna-page .btn {
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.qna-page .q-item:hover {
+  box-shadow: 0 10px 28px rgba(124,58,237,0.20);
+}
+
+/* Ensure beneath-navbar spacing is consistent */
+.qna-page .container { padding-top: 32px; }

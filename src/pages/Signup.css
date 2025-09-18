@@ -1,3 +1,70 @@
+/* Role selection (Student / Teacher) */
+.role-toggle { margin-top: 12px; }
+.role-toggle .student-label { display:block; margin-bottom: 8px; }
+
+.role-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.role-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px; /* bigger */
+  border-radius: 14px;
+  border: 1px solid rgba(124,58,237,0.28);
+  background: radial-gradient(120% 120% at 0% 0%, rgba(124,58,237,0.18), transparent 50%),
+              radial-gradient(120% 120% at 100% 0%, rgba(244,114,182,0.16), transparent 55%),
+              rgba(2,6,23,0.35);
+  color: #eaeaff;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .35s ease;
+  box-shadow: 0 6px 16px rgba(124,58,237,0.18);
+  position: relative;
+  overflow: hidden;
+}
+.role-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(124,58,237,0.25);
+  background: radial-gradient(120% 120% at 0% 0%, rgba(124,58,237,0.22), transparent 50%),
+              radial-gradient(120% 120% at 100% 0%, rgba(244,114,182,0.22), transparent 55%),
+              rgba(2,6,23,0.42);
+}
+.role-option:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(244,114,182,0.45); }
+
+.role-option .role-emoji { font-size: 20px; }
+.role-option .role-text { font-weight: 700; letter-spacing: .2px; }
+
+.role-option.active,
+.role-option.active:hover {
+  background: linear-gradient(135deg, #7c3aed, #f472b6) !important;
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 22px rgba(124,58,237,0.35), inset 0 0 0 2px rgba(255,255,255,0.08);
+  animation: role-pulse 1.4s ease-in-out infinite alternate;
+}
+
+/* Sheen sweep on hover */
+.role-option::after {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.18) 40%, transparent 60%);
+  transform: translateX(-120%);
+}
+.role-option:hover::after { animation: sheen 0.9s ease forwards; }
+
+@keyframes sheen {
+  to { transform: translateX(120%); }
+}
+
+@keyframes role-pulse {
+  0% { box-shadow: 0 8px 22px rgba(124,58,237,0.30), inset 0 0 0 2px rgba(255,255,255,0.08); }
+  100% { box-shadow: 0 12px 30px rgba(244,114,182,0.38), inset 0 0 0 2px rgba(255,255,255,0.14); }
+}
+
+.role-hint { font-size: 12px; opacity: .85; margin-top: 6px; }
 .form-footer {
   text-align: center;
 }

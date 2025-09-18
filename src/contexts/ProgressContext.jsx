@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 const ProgressContext = createContext(null);
 
 const STORAGE_KEY = 'student_progress';
+const storageKeyFor = (user) => `${STORAGE_KEY}:${user?.id || 'anon'}`;
 
 export function ProgressProvider({ children }) {
   const [studentProgress, setStudentProgress] = useState({});
@@ -12,7 +13,20 @@ export function ProgressProvider({ children }) {
   const [firstHydrate, setFirstHydrate] = useState(true);
   const { user, isSupabaseConfigured } = useAuth();
 
-  // Initial hydrate: prefer Supabase when configured and user exists; otherwise fallback to localStorage
+  // Compute XP similar to Leaderboard page
+  const calcXP = (progress) => {
+    if (!progress) return 0;
+    const subjects = ['science', 'technology', 'mathematics'];
+    let games = 0, quizzes = 0;
+    subjects.forEach(s => {
+      games += progress[s]?.games || 0;
+      quizzes += progress[s]?.quizzes || 0;
+    });
+    const streak = progress.streak || 0;
+    return games * 15 + quizzes * 25 + streak * 20;
+  };
+
+  // Initial hydrate: prefer Supabase when configured and user exists; otherwise fallback to per-user localStorage
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -29,18 +43,31 @@ export function ProgressProvider({ children }) {
             }
             if (data?.data) {
               setStudentProgress(data.data || {});
+              // refresh local cache as backup
+              try { localStorage.setItem(storageKeyFor(user), JSON.stringify(data.data || {})); } catch {}
             } else {
-              // no row yet; start empty
-              setStudentProgress({});
+              // no row yet on DB; try local cache before starting empty
+              const raw = localStorage.getItem(storageKeyFor(user));
+              if (raw) {
+                try { setStudentProgress(JSON.parse(raw)); }
+                catch { setStudentProgress({}); }
+              } else {
+                setStudentProgress({});
+              }
             }
           }
         } else {
           // Demo/local mode
-          const raw = localStorage.getItem(STORAGE_KEY);
+          const raw = localStorage.getItem(storageKeyFor(user));
           if (raw) setStudentProgress(JSON.parse(raw));
         }
       } catch (e) {
         console.warn('Progress hydrate error:', e.message);
+        // fallback to local cache on any unexpected error
+        try {
+          const raw = localStorage.getItem(storageKeyFor(user));
+          if (raw) setStudentProgress(JSON.parse(raw));
+        } catch {}
       } finally {
         if (!cancelled) setLoading(false);
         setFirstHydrate(false);
@@ -49,7 +76,7 @@ export function ProgressProvider({ children }) {
     return () => { cancelled = true; };
   }, [isSupabaseConfigured, user]);
 
-  // Persist changes: Supabase when available, otherwise localStorage
+  // Persist changes: Supabase when available, otherwise per-user localStorage
   useEffect(() => {
     if (firstHydrate) return; // avoid writing back immediately on first load
     (async () => {
@@ -60,11 +87,37 @@ export function ProgressProvider({ children }) {
             .from('student_progress')
             .upsert(payload, { onConflict: 'user_id' });
           if (error) console.warn('Failed to persist progress to DB:', error.message);
+
+          // Always keep a local backup so UI survives refresh even if DB fails
+          try { localStorage.setItem(storageKeyFor(user), JSON.stringify(studentProgress)); } catch {}
+
+          // Also upsert into leaderboard with computed XP
+          try {
+            const xp = calcXP(studentProgress);
+            const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player';
+            const klass = studentProgress?.class || studentProgress?.grade || user.user_metadata?.class || null;
+            const lbPayload = {
+              user_id: user.id,
+              display_name: displayName,
+              class: klass,
+              xp,
+              updated_at: new Date().toISOString(),
+            };
+            const { error: lbErr } = await supabase
+              .from('leaderboard')
+              .upsert(lbPayload, { onConflict: 'user_id' });
+            if (lbErr) console.warn('Failed to upsert leaderboard XP:', lbErr.message);
+          } catch (e) {
+            console.warn('Leaderboard upsert error:', e.message);
+          }
         } else {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(studentProgress));
+          // Local/demo mode: persist to localStorage
+          try { localStorage.setItem(storageKeyFor(user), JSON.stringify(studentProgress)); } catch {}
         }
       } catch (e) {
         console.warn('Persist progress error:', e.message);
+        // On any persist error, ensure local backup so we don't lose state
+        try { localStorage.setItem(storageKeyFor(user), JSON.stringify(studentProgress)); } catch {}
       }
     })();
   }, [studentProgress, isSupabaseConfigured, user, firstHydrate]);

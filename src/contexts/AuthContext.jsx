@@ -29,25 +29,33 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     if (!isSupabaseConfigured) {
-      // Demo mode: accept any credentials
-      const demo = { id: 'demo-user', email, user_metadata: { full_name: 'Demo Student' } };
+      // Demo mode: accept any credentials, reuse stored demo user if exists
+      let demo = null;
+      try { demo = JSON.parse(localStorage.getItem('demo_user') || 'null'); } catch {}
+      if (!demo) {
+        demo = { id: 'demo-user', email, user_metadata: { full_name: 'Demo Student', role: 'student' } };
+        localStorage.setItem('demo_user', JSON.stringify(demo));
+      }
       setUser(demo);
-      localStorage.setItem('demo_user', JSON.stringify(demo));
       return { success: true, user: demo };
     }
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { success: false, error: error.message };
       setUser(data.user);
+      try {
+        const r = data?.user?.user_metadata?.role;
+        if (r) localStorage.setItem('last_role', r);
+      } catch {}
       return { success: true, user: data.user };
     } catch (e) {
       return { success: false, error: e.message };
     }
   };
 
-  const signUp = async (email, password, fullName) => {
+  const signUp = async (email, password, fullName, role = 'student') => {
     if (!isSupabaseConfigured) {
-      const demo = { id: 'demo-user', email, user_metadata: { full_name: fullName } };
+      const demo = { id: 'demo-user', email, user_metadata: { full_name: fullName, role } };
       setUser(demo);
       localStorage.setItem('demo_user', JSON.stringify(demo));
       return { success: true, user: demo };
@@ -57,7 +65,7 @@ export function AuthProvider({ children }) {
         email,
         password,
         options: {
-          data: { full_name: fullName },
+          data: { full_name: fullName, role },
         },
       });
       if (error) return { success: false, error: error.message };

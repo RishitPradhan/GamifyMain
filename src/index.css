@@ -222,12 +222,15 @@ img {
 
 .chapter-card {
   position: relative;
-  background: #ffffff;
+  background: linear-gradient(180deg, rgba(124,58,237,0.12), rgba(244,114,182,0.10));
+  border: 1px solid rgba(124,58,237,0.22);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 18px rgba(124,58,237,0.15);
   transform: translateY(0);
   transition: transform 160ms ease, box-shadow 160ms ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .chapter-card:hover {
@@ -258,6 +261,30 @@ img {
 }
 
 /* Generated purple thumbnails for Maths */
+
+/* Sidebar: hide its scrollbar but keep scrolling */
+.pixel-sidebar {
+  overflow-y: auto;
+  -ms-overflow-style: none;   /* IE/Edge */
+  scrollbar-width: none;      /* Firefox */
+  overscroll-behavior: contain;
+}
+.pixel-sidebar::-webkit-scrollbar { /* Chrome/Safari */
+  width: 0;
+  height: 0;
+}
+
+/* Extra strict: hide any nested scrollbars inside the sidebar */
+.pixel-sidebar * {
+  -ms-overflow-style: none !important; /* IE/Edge */
+  scrollbar-width: none !important;    /* Firefox */
+}
+.pixel-sidebar *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
 .chapter-thumb.gen {
   display: flex;
   align-items: center;

@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useProgress } from '../contexts/ProgressContext';
+import { supabase } from '../supabaseClient';
 
 // Helpers
 const PERFECT_SQUARES = new Set([1,4,9,16,25,36,49,64,81,100]);
@@ -36,6 +38,7 @@ const POWER_DURATION_MS = 10000;
 function randomChoice(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 
 export default function PacSquaresGame() {
+  const { studentProgress, updateProgress } = useProgress();
   const canvasRef = useRef(null);
   const [running, setRunning] = useState(false); // don't auto-start
   const [score, setScore] = useState(0);
@@ -724,6 +727,16 @@ export default function PacSquaresGame() {
       }
     })();
   }, [ended, score]);
+
+  // Award mathematics game progress on end (increments XP)
+  useEffect(() => {
+    if (!ended) return;
+    try {
+      const curr = studentProgress?.mathematics?.games || 0;
+      const next = Math.min(100, curr + 1);
+      updateProgress('mathematics', { games: next });
+    } catch {}
+  }, [ended, studentProgress, updateProgress]);
 
   const reset = () => window.location.reload();
 

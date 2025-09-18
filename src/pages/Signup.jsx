@@ -10,7 +10,8 @@ const Signup = () => {
     fullName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'student'
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -125,7 +126,7 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      const result = await signUp(formData.email, formData.password, formData.fullName);
+      const result = await signUp(formData.email, formData.password, formData.fullName, formData.role);
       
       if (result.success) {
         setShowSuccess(true);
@@ -134,7 +135,7 @@ const Signup = () => {
         // Hide success animation and redirect after 3 seconds
         setTimeout(() => {
           setShowSuccess(false);
-          navigate('/home');
+          navigate(formData.role === 'teacher' ? '/teacher-home' : '/home');
         }, 3000);
       } else {
         setAuthError(result.error || 'Signup failed. Please try again.');
@@ -370,6 +371,32 @@ const Signup = () => {
                   )}
                 </div>
                 {errors.confirmPassword && <div className="error-message">{errors.confirmPassword}</div>}
+              </div>
+
+              {/* Role Selection */}
+              <div className="input-group role-toggle">
+                <label className="student-label">Select Role</label>
+                <div className="role-options">
+                  <button
+                    type="button"
+                    className={`role-option ${formData.role === 'student' ? 'active' : ''}`}
+                    aria-pressed={formData.role === 'student'}
+                    onClick={()=>setFormData(f=>({...f, role:'student'}))}
+                  >
+                    <span className="role-emoji">👨‍🎓</span>
+                    <span className="role-text">Student</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`role-option ${formData.role === 'teacher' ? 'active' : ''}`}
+                    aria-pressed={formData.role === 'teacher'}
+                    onClick={()=>setFormData(f=>({...f, role:'teacher'}))}
+                  >
+                    <span className="role-emoji">👩‍🏫</span>
+                    <span className="role-text">Teacher</span>
+                  </button>
+                </div>
+                <div className="role-hint">We’ll personalize your experience based on your role.</div>
               </div>
 
               <button 

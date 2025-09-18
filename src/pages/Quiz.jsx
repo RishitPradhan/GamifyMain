@@ -2,12 +2,33 @@ import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import quizzes from "../data/quizzes.json";
 import { loadLocalProgress, saveLocalProgress, enqueueSync } from "../stores/localProgress";
+import { useProgress } from "../contexts/ProgressContext";
 
 export default function Quiz() {
   const { id } = useParams();
   const quiz = quizzes[id] || [];
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
+
+  const { studentProgress, updateProgress } = useProgress();
+
+  // Map quiz id to our subject keys used for XP calc
+  const resolveSubjectKey = () => {
+    if (id === 'math' || id === 'mathematics') return 'mathematics';
+    if (id === 'science') return 'science';
+    if (id === 'technology' || id === 'tech') return 'technology';
+    // fallback: try to infer from existing keys
+    if (quizzes['math'] && id in quizzes) return 'mathematics';
+    if (quizzes['science'] && id in quizzes) return 'science';
+    return 'technology';
+  };
+
+  const awardQuizProgress = () => {
+    const subjectKey = resolveSubjectKey();
+    const curr = studentProgress?.[subjectKey]?.quizzes || 0;
+    const next = Math.min(100, curr + 1);
+    updateProgress(subjectKey, { quizzes: next });
+  };
 
   const profile = JSON.parse(localStorage.getItem("gamify_profile") || "{}");
 
@@ -44,6 +65,9 @@ export default function Quiz() {
       score: finalScore,
       timestamp: new Date().toISOString(),
     });
+
+    // Award XP progress for quizzes (triggers DB upsert via ProgressContext)
+    awardQuizProgress();
   };
 
   if (quiz.length === 0) return <p>No quiz for {id}</p>;

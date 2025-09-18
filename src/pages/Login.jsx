@@ -84,7 +84,8 @@ const Login = () => {
         // Hide success animation and redirect after 2 seconds
         setTimeout(() => {
           setShowSuccess(false);
-          navigate('/home');
+          const role = result?.user?.user_metadata?.role || 'student';
+          navigate(role === 'teacher' ? '/teacher-home' : '/home');
         }, 2000);
       } else {
         setAuthError(result.error || 'Login failed. Please try again.');

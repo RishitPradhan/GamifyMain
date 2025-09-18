@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import './Leaderboard.css';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 
 const readJSON = (key, fallback = null) => {
   try {
@@ -25,24 +27,74 @@ function calcXP(progress) {
 }
 
 export default function Leaderboard() {
+  const { user, isSupabaseConfigured } = useAuth();
   const [selectedClass, setSelectedClass] = useState('All');
-  const allPlayers = useMemo(() => {
-    const data = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('student_progress_')) {
-        const userKey = key.replace('student_progress_', '');
-        const p = readJSON(key, {});
-        const xp = calcXP(p);
-        // derive a display name if available
-        const userInfo = readJSON(`user_${userKey}`, null);
-        const name = userInfo?.displayName || userInfo?.name || userKey.split('@')[0];
-        const klass = userInfo?.class || userInfo?.grade || p?.class || 'Unknown';
-        data.push({ name, xp, klass, key: userKey });
+  const [allPlayers, setAllPlayers] = useState([]);
+
+  // Load leaderboard from Supabase if configured; otherwise from localStorage
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        if (isSupabaseConfigured && supabase) {
+          const { data, error } = await supabase
+            .from('leaderboard')
+            .select('user_id, display_name, class, xp')
+            .order('xp', { ascending: false })
+            .limit(50);
+          if (error) throw error;
+          if (!cancelled) {
+            setAllPlayers(
+              (data || []).map(r => ({
+                user_id: r.user_id,
+                name: r.display_name || 'Player',
+                xp: Number(r.xp) || 0,
+                klass: r.class ? String(r.class) : 'Unknown',
+              }))
+            );
+          }
+        } else {
+          const data = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('student_progress_')) {
+              const userKey = key.replace('student_progress_', '');
+              const p = readJSON(key, {});
+              const xp = calcXP(p);
+              const userInfo = readJSON(`user_${userKey}`, null);
+              const name = userInfo?.displayName || userInfo?.name || userKey.split('@')[0];
+              const klass = userInfo?.class || userInfo?.grade || p?.class || 'Unknown';
+              data.push({ name, xp, klass, key: userKey });
+            }
+          }
+          if (data.length === 0) {
+            data.push(
+              { name: 'Alice Quantum', xp: 960, klass: '8', key: 'demo_alice@example.com' },
+              { name: 'Bob Vector', xp: 840, klass: '8', key: 'demo_bob@example.com' },
+              { name: 'Carol Matrix', xp: 780, klass: '7', key: 'demo_carol@example.com' }
+            );
+          }
+          if (!cancelled) setAllPlayers(data.sort((a, b) => b.xp - a.xp));
+        }
+      } catch (e) {
+        console.warn('Leaderboard load error:', e.message);
       }
+    };
+    load();
+
+    // realtime updates from Supabase
+    let channel;
+    if (isSupabaseConfigured && supabase) {
+      channel = supabase
+        .channel('leaderboard-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => load())
+        .subscribe();
     }
-    return data.sort((a, b) => b.xp - a.xp);
-  }, []);
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [isSupabaseConfigured]);
 
   const classes = useMemo(() => {
     const set = new Set(['All']);
@@ -52,7 +104,8 @@ export default function Leaderboard() {
 
   const players = useMemo(() => {
     const filtered = selectedClass === 'All' ? allPlayers : allPlayers.filter(p => String(p.klass) === String(selectedClass));
-    return filtered.slice(0, 50);
+    // Ensure sorted desc by xp
+    return filtered.slice().sort((a, b) => b.xp - a.xp).slice(0, 50);
   }, [allPlayers, selectedClass]);
 
   return (
@@ -77,9 +130,15 @@ export default function Leaderboard() {
             {players.length === 0 ? (
               <div className="lb-empty">No players yet. Start learning to climb the ranks!</div>
             ) : players.map((p, i) => (
-              <div className={`lb-row ${i < 3 ? 'top' : ''} ${p.key && localStorage.getItem('current_user_email') && p.key === localStorage.getItem('current_user_email') ? 'me' : ''}`} key={p.name}>
+              <div className={`lb-row ${i < 3 ? 'top' : ''} ${(user && p.user_id && user.id === p.user_id) ? 'me' : ''}`} key={p.user_id || p.name}>
                 <span className="lb-rank">{i + 1}</span>
-                <span className="lb-name">{p.name} {p.klass && p.klass !== 'Unknown' ? <span className="lb-class">(Class {p.klass})</span> : null}</span>
+                <span className="lb-name">
+                  {/* Top 3 badges: 1st -> 24.png, 2nd -> 25.png, 3rd -> 26.png */}
+                  {i === 0 && <img className="lb-badge" src="/badge/24.png" alt="1st place badge" />}
+                  {i === 1 && <img className="lb-badge" src="/badge/25.png" alt="2nd place badge" />}
+                  {i === 2 && <img className="lb-badge" src="/badge/26.png" alt="3rd place badge" />}
+                  {p.name} {p.klass && p.klass !== 'Unknown' ? <span className="lb-class">(Class {p.klass})</span> : null}
+                </span>
                 <span className="lb-xp">{p.xp}</span>
               </div>
             ))}

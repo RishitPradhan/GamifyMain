@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useAnimation, useInView } from "framer-motion"
 import { useAuth } from "../contexts/AuthContext";
 import { useProgress } from "../contexts/ProgressContext";
 import NetworkStatusIndicator from "../components/NetworkStatusIndicator";
+import { supabase } from "../supabaseClient";
 import './Home.css';
 
 // Lightweight inline SVG icon set (no external deps)
@@ -61,8 +62,9 @@ export default function Home() {
   const [activeSection, setActiveSection] = useState("student");
   // Sidebar open/close state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user } = useAuth();
-  const { studentProgress, loading, getBadge, isNewUser, setMeta } = useProgress();
+  const { user, isSupabaseConfigured } = useAuth();
+  const { studentProgress, loading, getBadge, isNewUser, setMeta, updateProgress } = useProgress();
+  const [topPlayers, setTopPlayers] = useState([]);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,6 +109,79 @@ export default function Home() {
     }
   }, [user?.email]);
 
+  // Helper to compute XP when falling back to local
+  const calcXP = (progress) => {
+    if (!progress) return 0;
+    const subjects = ['science', 'technology', 'mathematics'];
+    let games = 0, quizzes = 0;
+    subjects.forEach(s => {
+      games += progress[s]?.games || 0;
+      quizzes += progress[s]?.quizzes || 0;
+    });
+    const streak = progress.streak || 0;
+    return games * 15 + quizzes * 25 + streak * 20;
+  };
+
+  // Computed Total XP from canonical model (keeps UI consistent with Leaderboard)
+  const computedTotalXP = useMemo(() => calcXP(studentProgress || {}), [studentProgress]);
+
+  // Load top 3 leaderboard from Supabase (or local fallback)
+  useEffect(() => {
+    let cancelled = false;
+    const loadTop = async () => {
+      try {
+        if (isSupabaseConfigured && supabase) {
+          const { data, error } = await supabase
+            .from('leaderboard')
+            .select('user_id, display_name, class, xp')
+            .order('xp', { ascending: false })
+            .limit(3);
+          if (error) throw error;
+          if (!cancelled) {
+            setTopPlayers((data || []).map(r => ({
+              user_id: r.user_id,
+              name: r.display_name || 'Player',
+              xp: Number(r.xp) || 0,
+              klass: r.class ? String(r.class) : 'Unknown',
+            })));
+          }
+        } else {
+          const data = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('student_progress_')) {
+              const email = key.replace('student_progress_', '');
+              try {
+                const p = JSON.parse(localStorage.getItem(key) || '{}');
+                const xp = calcXP(p);
+                const userInfo = JSON.parse(localStorage.getItem(`user_${email}`) || 'null');
+                const name = userInfo?.displayName || userInfo?.name || (email ? email.split('@')[0] : 'Player');
+                const klass = userInfo?.class || userInfo?.grade || p?.class || 'Unknown';
+                data.push({ name, xp, klass, key: email });
+              } catch {}
+            }
+          }
+          data.sort((a, b) => b.xp - a.xp);
+          if (!cancelled) setTopPlayers(data.slice(0, 3));
+        }
+      } catch (e) {
+        console.warn('Home leaderboard load error:', e.message);
+      }
+    };
+    loadTop();
+    let channel;
+    if (isSupabaseConfigured && supabase) {
+      channel = supabase
+        .channel('home-leaderboard-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leaderboard' }, () => loadTop())
+        .subscribe();
+    }
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [isSupabaseConfigured]);
+
   // ===== LocalStorage helpers for progress/claims =====
   const progressKey = useMemo(() => {
     if (user?.email) return `student_progress_${user.email}`;
@@ -132,6 +207,19 @@ export default function Home() {
   const [dailyScore, setDailyScore] = useState(null);
   useEffect(() => {
     setDailyDone(studentProgress?.dailyChallengeDate === todayStr());
+  }, [studentProgress?.dailyChallengeDate]);
+
+  // Auto-open the Daily Challenge once per day if not completed yet; ensure closed when completed
+  useEffect(() => {
+    const today = todayStr();
+    const doneToday = studentProgress?.dailyChallengeDate === today;
+    if (doneToday) {
+      setDailyActive(false);
+      setDailyQs([]);
+      setDailyAns({});
+    } else {
+      setDailyActive(true);
+    }
   }, [studentProgress?.dailyChallengeDate]);
 
   const handleDailyStart = () => {
@@ -171,22 +259,33 @@ export default function Home() {
     const score = dailyQs.reduce((acc, q) => acc + (dailyAns[q.id] === q.correct ? 1 : 0), 0);
     setDailyScore(score);
     const today = todayStr();
-    const mult = getActiveXPMultiplier();
+    const mult = getActiveXPMultiplier(); // currently not applied to leaderboard model
     if (studentProgress?.dailyChallengeDate !== today) {
       const prevDate = studentProgress?.dailyChallengeDate;
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yStr = yesterday.toISOString().slice(0,10);
-      const newStreak = prevDate === yStr ? Math.max(1, (studentProgress?.streak || 0) + 1) : 1;
+      const prevStreak = studentProgress?.streak || 0;
+      const newStreak = prevDate === yStr ? Math.max(1, prevStreak + 1) : 1;
+      // Persist only canonical fields used by XP model
       setMeta({
-        totalXP: (studentProgress?.totalXP || 0) + DAILY_CHALLENGE_XP * mult,
         dailyChallengeDate: today,
         streak: newStreak,
       });
+      // Award quiz progress for Science (counts towards XP)
+      try {
+        const curr = studentProgress?.science?.quizzes || 0;
+        const next = Math.min(100, curr + 1);
+        updateProgress('science', { quizzes: next });
+      } catch {}
+      // Compute gained XP consistent with leaderboard model: quizzes(+25) + streakDelta*20
+      const streakDelta = Math.max(0, newStreak - prevStreak);
+      const gainedXP = 25 + (streakDelta * 20);
+      pushRecent('⚡', `Completed daily challenge (${score}/3) +${gainedXP} XP`);
     }
     setDailyDone(true);
     setDailyActive(false);
-    pushRecent('⚡', `Completed daily challenge (${score}/3) +${DAILY_CHALLENGE_XP * mult} XP${mult>1?' (Boost x'+mult+')':''}`);
+    // pushRecent already added above when first completion today
   };
   const writeProgressLS = (obj) => {
     if (!progressKey) return;
@@ -387,14 +486,23 @@ export default function Home() {
             <span className="nav-ico"><Icon name="note" /></span>
             <span className="nav-label">Notes</span>
           </button>
+          <button className={`nav-item nav-qna ${location.pathname === '/qna' ? 'active' : ''}`} onClick={() => navigate('/qna')}>
+            <span className="nav-ico" aria-hidden>💬</span>
+            <span className="nav-label">Q&A</span>
+          </button>
+          <button className={`nav-item nav-pyq ${location.pathname === '/pyq' ? 'active' : ''}`} onClick={() => navigate('/pyq')}>
+            <span className="nav-ico" aria-hidden>📚</span>
+            <span className="nav-label">PYQ</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
           <div className="xp-chip">
             <span className="xp-ico"><Icon name="star" /></span>
-            <span className="xp-val">{studentProgress?.totalXP ?? 0} XP</span>
+            <span className="xp-val">{computedTotalXP} XP</span>
           </div>
         </div>
+
       </motion.aside>
 
       {/* VIP Hero: Greeting + XP snapshot + Continue CTA */}
@@ -418,7 +526,7 @@ export default function Home() {
           <div className="vip-hero-right">
             <div className="vip-stat">
               <div className="vip-stat-label">Total XP</div>
-              <div className="vip-stat-value">{studentProgress?.totalXP ?? 0}</div>
+              <div className="vip-stat-value">{computedTotalXP}</div>
             </div>
             <div className="vip-stat">
               <div className="vip-stat-label">Streak</div>
@@ -647,7 +755,7 @@ export default function Home() {
             >
               <div className="challenge-header">
                 <div className="challenge-title">Daily Challenge</div>
-                <div className="challenge-reward">+50 XP</div>
+                <div className="challenge-reward">+45 XP</div>
               </div>
               <p className="challenge-desc">Answer 3 quick questions to keep your streak alive!</p>
               {dailyDone && dailyScore !== null && (
@@ -704,7 +812,7 @@ export default function Home() {
                   >
                     {dailyDone ? 'Completed' : 'Start'}
                   </button>
-                  <button className="start-btn alt" onClick={() => pushRecent('⏭️','Skipped daily challenge')}>Skip</button>
+                  {/* Skip button removed per request */}
                 </div>
               )}
             </motion.section>
@@ -759,13 +867,39 @@ export default function Home() {
             >
               <div className="leaderboard-title">Leaderboard</div>
               <div className="leaderboard-top">
-                {[
+                {(topPlayers.length ? topPlayers : [
                   { name: 'PlayerOne', xp: 1240 },
                   { name: 'NovaKid', xp: 1180 },
                   { name: 'MathMage', xp: 1100 }
-                ].map((p, i) => (
+                ]).map((p, i) => (
                   <div className="leaderboard-item" key={p.name}>
-                    <span className="lb-rank">#{i+1}</span>
+                    <span className="lb-rank">
+                      {i === 0 && (
+                        <img
+                          className="lb-badge"
+                          src="/badge/24.png"
+                          alt="1st place badge"
+                          style={{ width: 28, height: 28, objectFit: 'contain', verticalAlign: 'middle', marginRight: 8 }}
+                        />
+                      )}
+                      {i === 1 && (
+                        <img
+                          className="lb-badge"
+                          src="/badge/25.png"
+                          alt="2nd place badge"
+                          style={{ width: 28, height: 28, objectFit: 'contain', verticalAlign: 'middle', marginRight: 8 }}
+                        />
+                      )}
+                      {i === 2 && (
+                        <img
+                          className="lb-badge"
+                          src="/badge/26.png"
+                          alt="3rd place badge"
+                          style={{ width: 28, height: 28, objectFit: 'contain', verticalAlign: 'middle', marginRight: 8 }}
+                        />
+                      )}
+                      {i > 2 && `#${i+1}`}
+                    </span>
                     <span className="lb-name">{p.name}</span>
                     <span className="lb-xp">{p.xp} XP</span>
                   </div>
@@ -773,6 +907,7 @@ export default function Home() {
               </div>
               <Link to="/leaderboard" className="start-btn alt" style={{ marginTop: 12 }}>View Full Leaderboard</Link>
             </motion.section>
+
             {/* Badges System removed per request (Achievements has full page at /achievements) */}
           </motion.div>
         ) : (

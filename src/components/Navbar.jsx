@@ -7,19 +7,30 @@ import "./Navbar.css";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const resolveHomePath = () => {
+    const role = user?.user_metadata?.role || (function(){
+      try { return JSON.parse(localStorage.getItem('demo_user')||'null')?.user_metadata?.role } catch { return null; }
+    })() || 'student';
+    return role === 'teacher' ? '/teacher-home' : '/home';
+  };
+  const homePath = resolveHomePath();
   return (
     <header className="app-navbar">
       <div className="nav-inner">
-        <Link to="/home" className="brand" aria-label="Home">
+        <Link to={homePath} className="brand" aria-label="Home" onClick={(e)=>{ e.preventDefault(); navigate(resolveHomePath()); }}>
           <span className="brand-text">Gamify</span>
         </Link>
 
         <nav className="nav-links" aria-label="Primary">
           <NavLink
-            to="/home"
+            to={homePath}
             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             end
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(resolveHomePath());
+            }}
           >
             Home
           </NavLink>
