@@ -12,7 +12,7 @@ export default function Navbar() {
     <header className="app-navbar">
       <div className="nav-inner">
         <Link to="/home" className="brand" aria-label="Home">
-          <span className="brand-text">GAMIFY</span>
+          <span className="brand-text">Gamify</span>
         </Link>
 
         <nav className="nav-links" aria-label="Primary">

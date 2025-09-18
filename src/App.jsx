@@ -15,6 +15,7 @@ import TeacherDashboard from './pages/TeacherDashboard'
 import Profile from './pages/Profile'
 import NotesPanel from './pages/NotesPanel'
 import Navbar from './components/Navbar'
+import BackButton from './components/BackButton'
 import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -29,9 +30,21 @@ const isMathLesson = location.pathname === '/lesson/math';
 const isProfile = location.pathname === '/profile';
 const isDashboard = location.pathname === '/dashboard';
 const isLanding = location.pathname === '/';
+const isSquares = location.pathname === '/math/squares';
 return (
 <div>
-{!isLanding && <Navbar />}
+{/* Show Navbar on all pages except Landing and the Squares page */}
+{!isLanding && !isSquares && <Navbar />}
+{isSquares && (
+  <header style={{
+    position:'sticky', top:0, zIndex:10000, width:'100%',
+    background:'linear-gradient(180deg, rgba(2,6,23,0.18), rgba(2,6,23,0.10))',
+    borderBottom:'1px solid rgba(255,255,255,0.12)',
+    padding:'10px 16px', display:'flex', alignItems:'center', gap:8
+  }}>
+    <BackButton />
+  </header>
+)}
 <div className={(isMathLesson || isProfile || isDashboard) ? 'container full-width' : 'container'}>
 <Routes>
 <Route path="/" element={<LandingPage />} />

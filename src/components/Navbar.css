@@ -10,9 +10,10 @@
 .app-navbar {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 4000; /* keep navbar and its children above other content */
   width: 100%;
-  overflow: hidden;
+  /* Allow dropdowns (e.g., translator) to render outside the navbar */
+  overflow: visible;
   background: #141821; /* slightly lighter dark gray */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -84,6 +85,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  position: relative; /* create stacking context for children */
+  z-index: 2000;      /* ensure actions (translator) are above brand */
+  overflow: visible;  /* allow dropdowns to extend */
 }
 
 .logout-btn {

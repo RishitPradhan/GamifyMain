@@ -60,7 +60,7 @@ export default function Home() {
   const [selectedClass, setSelectedClass] = useState("8");
   const [activeSection, setActiveSection] = useState("student");
   // Sidebar open/close state
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
   const { studentProgress, loading, getBadge, isNewUser, setMeta } = useProgress();
   

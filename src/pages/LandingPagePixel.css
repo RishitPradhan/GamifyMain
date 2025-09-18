@@ -146,8 +146,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 36px !important; /* doubled */
-  min-height: 96px !important; /* doubled consistent height */
+  padding: 12px 18px !important; /* compact */
+  min-height: 60px !important;  /* compact consistent height */
   background: linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.10));
   backdrop-filter: blur(6px) saturate(140%);
   -webkit-backdrop-filter: blur(6px) saturate(140%);
@@ -157,7 +157,7 @@
 
 .navbar-brand {
   font-family: 'Press Start 2P', monospace;
-  font-size: 28px !important; /* doubled */
+  font-size: 18px !important; /* compact */
   font-weight: normal;
   margin: 0;
   background: linear-gradient(45deg, #FFD700, #00FFFF, #FF69B4, #FFD700);
@@ -174,17 +174,17 @@
 .navbar-links {
   display: flex;
   align-items: center; /* vertically center links */
-  gap: 20px;
+  gap: 12px; /* compact */
 }
 
 .navbar-link {
   color: #cbd5e1;
   text-decoration: none;
-  padding: 12px 16px !important; /* doubled */
+  padding: 8px 12px !important; /* compact */
   border-radius: 8px;
   transition: all 0.3s ease;
   font-family: 'VT323', monospace;
-  font-size: 20px !important; /* larger */
+  font-size: 14px !important; /* compact */
   text-transform: uppercase;
 }
 
@@ -195,14 +195,14 @@
 }
 
 .navbar-btn {
-  padding: 14px 22px !important; /* larger */
+  padding: 8px 12px !important; /* compact */
   border-radius: 10px;
   text-decoration: none;
   font-weight: bold;
-  border: 2px solid rgba(139, 92, 246, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.5);
   transition: all 0.3s ease;
   font-family: 'VT323', monospace;
-  font-size: 20px !important; /* larger */
+  font-size: 14px !important; /* compact */
   text-transform: uppercase;
   cursor: pointer;
   background: none;

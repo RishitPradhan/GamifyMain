@@ -1,7 +1,110 @@
 /* Translator Widget Styles */
 .translator-widget {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  z-index: 4001; /* ensure above navbar stacking */
+}
+
+/* Themed shell around the Google gadget to ensure consistent look */
+.translator-shell {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 8px; /* inner breathing */
+  border-radius: 12px;
+  border: 1px solid rgba(167,139,250,0.32);
+  background: linear-gradient(135deg, rgba(11,7,32,0.85), rgba(88,28,135,0.55), rgba(17,12,28,0.7));
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.28),
+    0 0 0 1px rgba(139,92,246,0.20) inset;
+  position: relative;
+  z-index: 4002; /* below the select */
+  pointer-events: auto; /* allow interaction */
+}
+
+/* Ensure the official Google gadget is visible and readable in the navbar */
+.translator-widget #google_translate_element {
   display: inline-block;
+}
+.translator-widget .goog-te-gadget {
+  font-size: 0; /* hide default label text spacing */
+  display: inline-flex;
+  align-items: center;
+}
+/* Don't hide all spans; it can also hide the select once Google wraps it */
+/* Hide Google logo/link only */
+.translator-widget .goog-logo-link { display: none !important; }
+.translator-widget .goog-te-gadget { color: transparent; }
+.app-navbar .translator-widget .goog-te-gadget .goog-te-combo,
+.translator-widget .goog-te-gadget .goog-te-combo {
+  font-size: 14px;
+  min-width: 190px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  padding: 0 40px 0 38px !important; /* space for custom arrow (right) and globe icon (left) */
+  border-radius: 10px !important;
+  border: 0 !important; /* shell handles border */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7' fill='none'%3E%3Cpath d='M1 1.25L5.5 5.75L10 1.25' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e5e7eb' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/%3E%3C/svg%3E") no-repeat left 12px center,
+    transparent !important; /* shell provides background */
+  color: var(--nav-text) !important;
+  -webkit-text-fill-color: var(--nav-text) !important;
+  box-shadow:
+    none !important;
+  position: relative !important;
+  z-index: 4003 !important; /* above shell */
+  pointer-events: auto !important; /* ensure clickable */
+  appearance: none !important; /* hide native arrow */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  transition: box-shadow 0.2s ease, transform 0.12s ease, border-color 0.2s ease, background 0.2s ease !important;
+}
+.app-navbar .translator-widget .goog-te-gadget .goog-te-combo:focus,
+.translator-widget .goog-te-gadget .goog-te-combo:focus {
+  outline: none;
+  border-color: rgba(34,211,238,0.55) !important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.24) !important,
+    0 0 0 4px rgba(34,211,238,0.20) !important,
+    inset 0 0 0 1px rgba(255,255,255,0.6) !important;
+}
+.app-navbar .translator-widget .goog-te-gadget .goog-te-combo:hover,
+.translator-widget .goog-te-gadget .goog-te-combo:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 30px rgba(0,0,0,0.32) !important,
+    0 0 0 1px rgba(139,92,246,0.26) inset !important;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7' fill='none'%3E%3Cpath d='M1 1.25L5.5 5.75L10 1.25' stroke='%23e5e7eb' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/%3E%3C/svg%3E") no-repeat left 12px center,
+    linear-gradient(135deg, rgba(11,7,32,0.92), rgba(88,28,135,0.62), rgba(17,12,28,0.78)) !important;
+}
+
+/* Hide the small Google icon image inside the gadget */
+.translator-widget .goog-te-gadget img { display: none; }
+
+/* Dark theme compatibility: when navbar is dark, ensure contrast */
+@media (prefers-color-scheme: dark) {
+  .translator-widget .goog-te-gadget .goog-te-combo {
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7' fill='none'%3E%3Cpath d='M1 1.25L5.5 5.75L10 1.25' stroke='%23e5e7eb' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center,
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e5e7eb' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'/%3E%3C/svg%3E") no-repeat left 12px center,
+      linear-gradient(135deg, rgba(17,24,39,0.92), rgba(31,41,55,0.90)) !important;
+    color: #e5e7eb; /* slate-200 */
+    border-color: rgba(229,231,235,0.22);
+  }
+}
+
+/* Responsive: tighter on small screens */
+@media (max-width: 768px) {
+  .translator-widget .goog-te-gadget .goog-te-combo {
+    min-width: 150px;
+    height: 34px;
+    padding: 0 36px 0 36px;
+    font-size: 13px;
+  }
 }
 
 .translator-trigger {
