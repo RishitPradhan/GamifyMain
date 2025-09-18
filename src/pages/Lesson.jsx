@@ -290,6 +290,20 @@ export default function ScienceAdventureLab() {
                           >
                             👁 Peek Inside
                           </a>
+                          {chapter.title && /force/i.test(chapter.title) ? (
+                            <a
+                              href="https://muti-science-quiz-final.netlify.app/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="premium-btn-secondary"
+                            >
+                              🔥 Challenge Your Friends
+                            </a>
+                          ) : (
+                            <button className="premium-btn-secondary" disabled>
+                              🔒 Challenge locked
+                            </button>
+                          )}
                         </>
                       ) : (
                         <>
@@ -304,6 +318,20 @@ export default function ScienceAdventureLab() {
                           >
                             👁 Peek Inside
                           </a>
+                          {chapter.title && /force/i.test(chapter.title) ? (
+                            <a
+                              href="https://muti-science-quiz-final.netlify.app/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="premium-btn-secondary"
+                            >
+                              🔥 Challenge Your Friends
+                            </a>
+                          ) : (
+                            <button className="premium-btn-locked" disabled>
+                              🔒 Challenge Locked
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
@@ -412,7 +440,7 @@ export default function ScienceAdventureLab() {
         @keyframes glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         .tab-text { position: relative; z-index: 2; }
         .chapters-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px; position: relative; z-index: 1; max-width: 100%; margin: 0 auto; padding: 0 10px; }
-        .chapter-card, .premium-chapter-card { opacity: 0; transform: translateY(50px) scale(0.9); transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; min-height: 420px; max-height: 420px; }
+        .chapter-card, .premium-chapter-card { opacity: 0; transform: translateY(50px) scale(0.9); transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; min-height: 480px; max-height: none; }
         .chapter-card.visible, .premium-chapter-card.visible { opacity: 1; transform: translateY(0) scale(1); }
         .chapter-card.hovered, .premium-chapter-card.hovered { transform: translateY(-15px) scale(1.05) rotateY(5deg); z-index: 10; }
         .card-gradient { border-radius: 20px; padding: 3px; background-image: linear-gradient(135deg, #7c3aed55, #d946ef55, #a855f755); background-size: 200% 200%; animation: gradientMove 4s ease infinite; transition: all 0.3s ease; display: block; }
@@ -433,7 +461,7 @@ export default function ScienceAdventureLab() {
         @keyframes badgePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
         .premium-card-content { background: linear-gradient(135deg, #1b1233 0%, #2d1b4e 50%, #1a0b2e 100%) !important; border: 2px solid #7c3aed; border-radius: 17px; padding: 0; text-align: center; position: relative; backdrop-filter: blur(10px); height: 100%; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); transition: all 0.4s ease; overflow: hidden; }
         .premium-chapter-card:hover .premium-card-content { border-color: #d946ef; box-shadow: 0 0 30px rgba(217, 70, 239, 0.6); background: linear-gradient(135deg, #1f1540 0%, #341b5e 50%, #1e0c36 100%) !important; }
-        .premium-card-body { flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 220px; min-height: 220px; max-height: 220px; padding: 15px; background: transparent !important; }
+        .premium-card-body { flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: auto; min-height: 260px; max-height: none; padding: 15px; background: transparent !important; }
         .premium-actions { background: transparent !important; }
         .premium-btn, .premium-btn-secondary, .premium-btn-locked { background: linear-gradient(45deg, #7c3aed, #d946ef) !important; }
         .premium-btn-locked { background: linear-gradient(45deg, #4a5568, #6b7280) !important; }
@@ -474,6 +502,19 @@ export default function ScienceAdventureLab() {
         .footer-content { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 15px; display: inline-block; border: 2px solid rgba(255,255,255,0.2); }
         .footer-text { color: white; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
         .bounce-icon { font-size: 1.5rem; animation: bounce 2s infinite; display: inline-block; }
+        /* Ensure chapter title in cards fits without clipping (max 2 lines) */
+        .premium-card-body .chapter-title {
+          height: auto;
+          min-height: 3.6rem; /* enough for two lines with current font-size */
+          line-height: 1.2;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          margin-bottom: 6px;
+        }
+        /* Small spacing before buttons */
+        .premium-card-body .chapter-actions { margin-top: 6px; }
         @media (max-width: 1200px) { .chapters-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; } }
         @media (max-width: 900px) {
           .chapters-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }

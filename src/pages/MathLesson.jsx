@@ -279,11 +279,20 @@ export default function MathLesson() {
                 </div>
                 <div className="math-body">
                   <div className="math-title">{ch.title}</div>
-                  <div style={{ marginTop: 10 }}>
+                  <div className="math-actions" style={{ marginTop: 10, display:'flex', gap:8, justifyContent:'center', alignItems:'center', flexWrap:'wrap' }}>
                     {isLocked ? (
                       <span className="btn" style={{ opacity: 0.7, cursor:'not-allowed' }}>🔒 Locked</span>
                     ) : (
-                      isInternal ? (<span className="btn">Open</span>) : (<span className="btn">Open PDF</span>)
+                      <>
+                        {isInternal ? (<span className="btn">Open</span>) : (<span className="btn">Open PDF</span>)}
+                        <button
+                          className="btn"
+                          onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open('https://maths-quiz-git-deploy.netlify.app/','_blank','noopener,noreferrer'); }}
+                          title="Challenge Your Friends"
+                        >
+                          🔥 Challenge Your Friends
+                        </button>
+                      </>
                     )}
                     <span className="xp-pill math-xp">+{ch.xp} XP</span>
                   </div>
