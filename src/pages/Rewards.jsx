@@ -10,7 +10,21 @@ const readJSON = (k, f = null) => {
 
 export default function Rewards() {
   const { studentProgress, setMeta } = useProgress();
-  const balance = Number(studentProgress?.totalXP || 0);
+  // Mirror Home.jsx canonical XP computation so Rewards shows the same total XP
+  const calcXP = (progress) => {
+    if (!progress) return 0;
+    const subjects = ['science', 'technology', 'mathematics'];
+    let games = 0, quizzes = 0;
+    subjects.forEach(s => {
+      games += progress[s]?.games || 0;
+      quizzes += progress[s]?.quizzes || 0;
+    });
+    const streakVal = progress.streak || 0;
+    return games * 15 + quizzes * 25 + streakVal * 20;
+  };
+  const computedTotalXP = useMemo(() => calcXP(studentProgress || {}), [studentProgress]);
+  const xpSpent = Number(studentProgress?.xpSpent || 0);
+  const balance = Math.max(0, computedTotalXP - xpSpent);
   const streak = Number(studentProgress?.streak || 0);
 
   const items = useMemo(() => ([
@@ -39,7 +53,7 @@ export default function Rewards() {
     try {
       const now = Date.now();
       const already = Array.isArray(studentProgress?.redeemed) ? studentProgress.redeemed : [];
-      const nextBase = { totalXP: Math.max(0, balance - item.cost), redeemed: [...already, { id: item.id, at: now }] };
+      const nextBase = { xpSpent: xpSpent + item.cost, redeemed: [...already, { id: item.id, at: now }] };
 
       // Apply side effects based on item type
       const settings = { ...(studentProgress?.settings || {}) };

@@ -157,6 +157,7 @@ const Login = () => {
           ref={videoRef}
           onLoadedData={handleVideoLoaded}
           onError={handleVideoError}
+          poster={'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%231a0b2e"/><stop offset="50%" stop-color="%230f3460"/><stop offset="100%" stop-color="%237209b7"/></linearGradient></defs><rect width="100%" height="100%" fill="url(%23g)"/></svg>'}
         >
           <source src="/login.mp4" type="video/mp4" />
           Your browser does not support the video tag.

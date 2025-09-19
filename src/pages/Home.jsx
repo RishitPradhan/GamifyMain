@@ -125,6 +125,39 @@ export default function Home() {
   // Computed Total XP from canonical model (keeps UI consistent with Leaderboard)
   const computedTotalXP = useMemo(() => calcXP(studentProgress || {}), [studentProgress]);
 
+  // Room URLs for embedded competitions (configurable via env or localStorage)
+  const getEnv = (keys) => {
+    try {
+      for (const k of keys) {
+        const viteVal = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[k]) || undefined;
+        if (viteVal) return viteVal;
+        const craVal = (typeof process !== 'undefined' && process.env && process.env[k]) || undefined;
+        if (craVal) return craVal;
+      }
+    } catch {}
+    return '';
+  };
+  const roomUrls = useMemo(() => ({
+    science:
+      getEnv(['VITE_SCIENCE_ROOM_URL', 'REACT_APP_SCIENCE_ROOM_URL']) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('room_url_science') : '') ||
+      'https://science-final-mutiplayer.netlify.app/',
+    mathematics:
+      getEnv(['VITE_MATHEMATICS_ROOM_URL', 'VITE_MATHS_ROOM_URL', 'REACT_APP_MATHEMATICS_ROOM_URL', 'REACT_APP_MATHS_ROOM_URL']) ||
+      (typeof localStorage !== 'undefined' ? (localStorage.getItem('room_url_mathematics') || localStorage.getItem('room_url_maths')) : '') ||
+      'https://maths-final-multiplayer.netlify.app/',
+  }), []);
+
+  const openRoom = (subjectKey, e) => {
+    try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+    const url = roomUrls[subjectKey];
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      alert('Room URL not configured yet for ' + subjectKey + '. Please set it via env or localStorage.');
+    }
+  };
+
   // Load top 3 leaderboard from Supabase (or local fallback)
   useEffect(() => {
     let cancelled = false;
@@ -218,7 +251,10 @@ export default function Home() {
       setDailyQs([]);
       setDailyAns({});
     } else {
-      setDailyActive(true);
+      // Do not auto-open; keep it closed until user clicks Start
+      setDailyActive(false);
+      setDailyQs([]);
+      setDailyAns({});
     }
   }, [studentProgress?.dailyChallengeDate]);
 
@@ -408,6 +444,19 @@ export default function Home() {
     });
   };
 
+  // Determine best resume destination based on user's progress
+  const getResumePath = () => {
+    try {
+      const s = studentProgress || {};
+      const sci = (s.science?.games || 0) + (s.science?.quizzes || 0);
+      const math = (s.mathematics?.games || 0) + (s.mathematics?.quizzes || 0);
+      if (sci === 0 && math === 0) return '/lesson/math';
+      return sci >= math ? '/lesson/science' : '/lesson/math';
+    } catch {
+      return '/lesson/math';
+    }
+  };
+
   // Show loading state while data is being fetched
   if (loading) {
     return (
@@ -517,10 +566,10 @@ export default function Home() {
             <h2 className="vip-hero-title">{`Welcome${user ? `, ${user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player'}` : ''}`}</h2>
             <p className="vip-hero-sub">Ready to continue your quest?</p>
             <div className="vip-hero-actions">
-              <button className="start-btn" onClick={() => navigate('/home')}>
+              <button className="start-btn" onClick={() => navigate(getResumePath())}>
                 ▶ Continue Learning
               </button>
-              <Link to="/rewards" className="start-btn alt">🏆 Rewards</Link>
+              <Link to="/rewards" className="start-btn alt rewards-btn">🏆 Rewards</Link>
             </div>
           </div>
           <div className="vip-hero-right">
@@ -540,21 +589,7 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* Quick Actions */}
-      <motion.section
-        className="vip-quick-actions"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="quick-actions-row">
-          <Link className="quick-action glass-card" to="/home">🎮 Resume</Link>
-          <Link className="quick-action glass-card" to="/lesson/math">🧠 Start a Quest</Link>
-          <Link className="quick-action glass-card" to="#daily-challenge">⚡ Daily Challenge</Link>
-          <Link className="quick-action glass-card" to="/rewards">🎁 Rewards</Link>
-        </div>
-      </motion.section>
+      {/* Quick Actions - removed per request */}
 
       {/* Continue Learning Strip */}
       <motion.section
@@ -573,7 +608,7 @@ export default function Home() {
             <div className="progress-bar"><div className="progress-fill" style={{ width: `${Math.min(100, studentProgress?.lastLessonProgress ?? 0)}%` }} /></div>
             <motion.button
               className="start-btn"
-              onClick={() => navigate('/home')}
+              onClick={() => navigate(getResumePath())}
               ref={resumeBtnRef}
               initial={{ scale: 1 }}
               animate={resumeControls}
@@ -660,6 +695,11 @@ export default function Home() {
                     </div>
                     <h3 className="subject-name">{subject.name}</h3>
                     <p className="subject-description">{subject.description}</p>
+                    {/* XP rewards info (consistent with leaderboard model): games=+15 XP, quizzes=+25 XP */}
+                    <div className="xp-rewards" style={{ display:'flex', gap:12, alignItems:'center', marginTop:6, color:'#c4b5fd', fontSize:13 }}>
+                      <span title="Completing a game increases Games% which yields +15 XP in total XP calculation">🎮 Game: +15 XP</span>
+                      <span title="Completing a quiz increases Quizzes% which yields +25 XP in total XP calculation">📝 Quiz: +25 XP</span>
+                    </div>
                     
                     {/* Fun Fact */}
                     <motion.div 
@@ -737,6 +777,47 @@ export default function Home() {
                         🚀
                       </motion.span>
                     </motion.button>
+
+                    {/* Join Room Button (opens external Netlify room) */}
+                    <motion.button
+                      className="start-btn alt join-room-btn"
+                      onClick={(e) => openRoom(subject.key, e)}
+                      whileHover={{ y: -2, transition: { duration: 0.12, ease: 'easeOut' } }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        delay: 0.95 + index * 0.08,
+                        duration: 0.4,
+                        type: 'spring',
+                        stiffness: 100,
+                      }}
+                      style={{
+                        marginTop: 8,
+                        background: 'linear-gradient(135deg, rgba(109,40,217,0.12), rgba(167,139,250,0.10))',
+                        border: '1px solid rgba(167, 139, 250, 0.28)',
+                        boxShadow: '0 6px 18px rgba(124, 58, 237, 0.18)',
+                        backdropFilter: 'blur(10px)',
+                        WebkitBackdropFilter: 'blur(10px)',
+                        color: '#ffffff'
+                      }}
+                    >
+                      <motion.span
+                        initial={{ x: 0 }}
+                        whileHover={{ x: 5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        Join {subject.name} Room
+                      </motion.span>
+                      <motion.span
+                        className="start-icon"
+                        initial={{ rotate: 0 }}
+                        whileHover={{ rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                      >
+                        🔗
+                      </motion.span>
+                    </motion.button>
                   </motion.div>
                 ))}
               </div>
@@ -763,7 +844,7 @@ export default function Home() {
                   You scored {dailyScore}/3 today. Great job!
                 </div>
               )}
-              {dailyActive ? (
+              {(dailyActive && dailyQs.length > 0) ? (
                 <>
                   <div className="daily-questions" style={{ marginTop: 12 }}>
                     {dailyQs.map((q, qi) => (
@@ -905,7 +986,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Link to="/leaderboard" className="start-btn alt" style={{ marginTop: 12 }}>View Full Leaderboard</Link>
+              <Link to="/leaderboard" className="start-btn alt leaderboard-btn" style={{ marginTop: 12 }}>View Full Leaderboard</Link>
             </motion.section>
 
             {/* Badges System removed per request (Achievements has full page at /achievements) */}

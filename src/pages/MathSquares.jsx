@@ -1208,7 +1208,7 @@ export default function MathSquares() {
         </div>
 
         {/* Concepts */}
-        {concepts.map((c) => (
+        {concepts.map((c, idx) => (
           <div key={c.key} style={{ margin: '16px 0', border: 'none', borderRadius: 8, background:'#0f0a1f' }}>
             <div style={{ padding: 12, background: '#1b1233', borderBottom: 'none', borderTopLeftRadius:8, borderTopRightRadius:8 }}>
               <h2 style={{ margin: 0, color: THEME.ink, textShadow:'1px 1px 0 #000' }}>{c.title}</h2>
@@ -1227,8 +1227,68 @@ export default function MathSquares() {
                 <div style={{ color: '#22c55e', fontWeight: 600 }}>Completed ✓</div>
               )}
             </div>
+
+            {/* Inserted interactive games at sweet spots (not at the end) */}
+            {idx === 0 && (
+              <div style={{ marginTop: 10, background: '#28104a', border: `1px solid ${THEME.frame}`, borderRadius: 6, padding: 10 }}>
+                <h3 style={{ color: '#7c3aed', textAlign: 'center', marginBottom: 12, textShadow: '0 0 10px rgba(124,58,237,0.6)' }}>
+                  🎮 Mini Game
+                </h3>
+                <div style={{ color: THEME.sub, marginBottom: 8, textAlign: 'center' }}>
+                  Practice spotting squares with a fast-paced activity. Stay focused and aim for accuracy!
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <iframe
+                    title="Squares Mini Game A"
+                    src="https://wordwall.net/embed/f026205d916c4abfa355d62cb3e8937c?themeId=26&templateId=49&fontStackId=0"
+                    style={{ width: '100%', maxWidth: 800, height: 380, border: 0, borderRadius: 6 }}
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            )}
+
+            {idx === 2 && (
+              <div style={{ marginTop: 10, background: '#28104a', border: `1px solid ${THEME.frame}`, borderRadius: 6, padding: 10 }}>
+                <h3 style={{ color: '#7c3aed', textAlign: 'center', marginBottom: 12, textShadow: '0 0 10px rgba(124,58,237,0.6)' }}>
+                  🎯 Challenge Game
+                </h3>
+                <div style={{ color: THEME.sub, marginBottom: 8, textAlign: 'center' }}>
+                  A tougher round that mixes squares and roots. Choose wisely to keep your streak!
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <iframe
+                    title="Squares Challenge Game B"
+                    src="https://wordwall.net/embed/08c5ffa6fedc4082985ee11068b2a537?themeId=46&templateId=48&fontStackId=0"
+                    style={{ width: '100%', maxWidth: 800, height: 380, border: 0, borderRadius: 6 }}
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            )}
+
+            {idx === 1 && (
+              <div style={{ marginTop: 10, background: '#28104a', border: `1px solid ${THEME.frame}`, borderRadius: 6, padding: 10 }}>
+                <h3 style={{ color: '#7c3aed', textAlign: 'center', marginBottom: 12, textShadow: '0 0 10px rgba(124,58,237,0.6)' }}>
+                  🧩 Puzzle Game
+                </h3>
+                <div style={{ color: THEME.sub, marginBottom: 8, textAlign: 'center' }}>
+                  Reinforce concepts with a puzzle that tests your recognition of perfect squares.
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <iframe
+                    title="Squares Puzzle Game C"
+                    src="https://wordwall.net/embed/e4693e3d1f144b2c9b287cd539b94cf9?themeId=22&templateId=45&fontStackId=0"
+                    style={{ width: '100%', maxWidth: 800, height: 380, border: 0, borderRadius: 6 }}
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ))}
+
+        {/* (Removed end-of-page Bonus Game by request) */}
       </div>
     </div>
   );

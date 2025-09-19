@@ -22,8 +22,10 @@
   .welcome-subtitle, .typing-text, .hero-slogan { font-size: clamp(16px, 4.2vw, 20px); }
 }
 
-/* Ensure canvases/embedded games scale on mobile */
-.card canvas, .game-canvas, canvas {
+/* Ensure canvases/embedded games scale on mobile (scoped to landing page only) */
+.landing-page .card canvas,
+.landing-page .game-canvas,
+.landing-page canvas {
   max-width: 100%;
   height: auto;
 }
@@ -231,6 +233,52 @@
   transform: translateY(-2px);
 }
 
+/* Home-style pink start button for LandingPage.jsx */
+.pixel-buttons-container .start-btn,
+.start-btn {
+  background: linear-gradient(135deg, #6b46c1 0%, #ec4899 100%) !important;
+  border: none !important;
+  padding: 16px 32px !important;
+  border-radius: 14px !important;
+  color: white !important;
+  font-weight: 800 !important;
+  font-size: 1rem !important;
+  cursor: pointer;
+  transition: transform 180ms ease-out, box-shadow 200ms ease-out, background 200ms ease-out !important;
+  box-shadow: 0 6px 0 #4c1d95, 0 16px 26px rgba(124, 58, 237, 0.42) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  width: fit-content;
+  font-family: 'Press Start 2P', cursive !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+.start-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset;
+  pointer-events: none;
+}
+.pixel-buttons-container .start-btn:hover,
+.start-btn:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #f472b6 100%);
+  box-shadow: 0 6px 0 #4c1d95, 0 20px 32px rgba(124, 58, 237, 0.52);
+  transform: translateY(-2px);
+}
+.pixel-buttons-container .start-btn:active,
+.start-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 0 #4c1d95, 0 12px 22px rgba(124, 58, 237, 0.5);
+}
+
 .language-select {
   background: rgba(139, 92, 246, 0.2);
   color: #ffffff;
@@ -410,10 +458,19 @@
 
 .pixel-buttons-container {
   display: flex;
-  gap: 20px;
+  gap: 12px; /* tighter spacing between buttons */
   justify-content: center;
   flex-wrap: wrap;
   margin-bottom: 60px;
+}
+
+/* Ensure no stray margins widen the space between buttons */
+.pixel-buttons-container > .start-btn,
+.pixel-buttons-container > .pixel-btn,
+.pixel-buttons-container > a.pixel-btn,
+.pixel-buttons-container > a.hero-btn,
+.pixel-buttons-container > .hero-btn {
+  margin: 0 !important;
 }
 
 .pixel-btn {

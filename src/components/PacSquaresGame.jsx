@@ -40,6 +40,9 @@ function randomChoice(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
 export default function PacSquaresGame() {
   const { studentProgress, updateProgress } = useProgress();
   const canvasRef = useRef(null);
+  // Fixed internal buffer size to keep draw math stable
+  const CANVAS_W = MAZE[0].length * CELL;
+  const CANVAS_H = MAZE.length * CELL;
   const [running, setRunning] = useState(false); // don't auto-start
   const [score, setScore] = useState(0);
   const [collected, setCollected] = useState([]); // numbers collected
@@ -61,6 +64,7 @@ export default function PacSquaresGame() {
   const [hintOn, setHintOn] = useState(false);
   const hintOnRef = useRef(false);
   const hintTimerRef = useRef(null);
+  const rafIdRef = useRef(0); // ensure RAF is cleaned up across mounts/route transitions
   const [showRules, setShowRules] = useState(true);
   const [powerTick, setPowerTick] = useState(0); // forces re-render for power bar
   // Background music state
@@ -688,12 +692,16 @@ export default function PacSquaresGame() {
       });
     };
 
-    const raf = () => {
+    const loop = () => {
       draw();
-      if (!ended) requestAnimationFrame(raf);
-      else draw();
+      // continue animating even after end to keep overlays painted, but throttle to one RAF
+      rafIdRef.current = requestAnimationFrame(loop);
     };
-    requestAnimationFrame(raf);
+    // start loop
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    rafIdRef.current = requestAnimationFrame(loop);
+    // cleanup on dependency change or unmount
+    return () => { if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current); rafIdRef.current = 0; };
   }, [ended]);
 
   // Music reacts to game state
@@ -765,7 +773,18 @@ export default function PacSquaresGame() {
         </div>
         <div style={{ color: '#6b21a8' }}>{message}</div>
       </div>
-      <div style={{ background: '#1f1640', padding: 8, borderRadius: 12, boxShadow: '0 10px 30px rgba(124,58,237,0.25)', display: 'inline-block', position: 'relative' }}>
+      {/* Responsive, self-contained canvas container to avoid global CSS conflicts in prod */}
+      <div style={{
+        background: '#1f1640',
+        padding: 8,
+        borderRadius: 12,
+        boxShadow: '0 10px 30px rgba(124,58,237,0.25)',
+        display: 'inline-block',
+        position: 'relative',
+        width: '100%',
+        maxWidth: CANVAS_W + 16, // cap at intrinsic width + padding
+        boxSizing: 'border-box'
+      }}>
         {/* Power-mode timer bar */}
         {Date.now() < powerUntilRef.current && (
           <div style={{ position: 'absolute', top: 4, left: 8, right: 8, height: 8, background: '#3f3f46', borderRadius: 999 }}>
@@ -778,12 +797,20 @@ export default function PacSquaresGame() {
             }} />
           </div>
         )}
-        <canvas
-          ref={canvasRef}
-          width={MAZE[0].length*CELL}
-          height={MAZE.length*CELL}
-          style={{ imageRendering: 'pixelated' }}
-        />
+        <div style={{ width: '100%', maxWidth: CANVAS_W, position: 'relative' }}>
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_W}
+            height={CANVAS_H}
+            style={{
+              display: 'block',            // prevent inline baseline gaps
+              width: '100%',               // scale down on small screens
+              height: 'auto',              // preserve aspect ratio
+              imageRendering: 'pixelated', // crisp scaling
+              background: '#120515'        // ensure visible background
+            }}
+          />
+        </div>
 
         {/* Hint button overlay (top-right) */}
         {!quizOpen && !ended && running && (

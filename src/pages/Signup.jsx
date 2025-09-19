@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Signup.css';
@@ -87,6 +87,16 @@ const Signup = () => {
     setErrors(newErrors);
   };
 
+  // Background video helpers
+  const videoRef = useRef(null);
+  const handleVideoLoaded = () => {
+    const v = videoRef.current;
+    if (v) {
+      try { const p = v.play(); if (p && typeof p.catch === 'function') p.catch(()=>{}); } catch {}
+    }
+  };
+  const handleVideoError = (e) => { try { console.warn('[Signup] video error', e?.target?.error||e); } catch {} };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -161,6 +171,10 @@ const Signup = () => {
           playsInline
           preload="auto"
           className="background-video"
+          ref={videoRef}
+          onLoadedData={handleVideoLoaded}
+          onError={handleVideoError}
+          poster={'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%231a0b2e"/><stop offset="50%" stop-color="%230f3460"/><stop offset="100%" stop-color="%237209b7"/></linearGradient></defs><rect width="100%" height="100%" fill="url(%23g)"/></svg>'}
         >
           <source src="/signup.mp4" type="video/mp4" />
           Your browser does not support the video tag.

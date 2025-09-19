@@ -242,17 +242,17 @@ function LandingPage() {
             transition={{ duration: 0.8, delay: 1 }}
           >
             <motion.button
-              className="pixel-btn pixel-btn-primary"
+              className="start-btn"
               onClick={handleGetStarted}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
             >
-              🎮 START ADVENTURE
+              ▶ Start Adventure
             </motion.button>
             
             <motion.a
               href="#features"
-              className="pixel-btn pixel-btn-secondary"
+              className="hero-btn hero-btn-secondary"
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
             >

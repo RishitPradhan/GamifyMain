@@ -8,7 +8,16 @@ const STORAGE_KEY = 'student_progress';
 const storageKeyFor = (user) => `${STORAGE_KEY}:${user?.id || 'anon'}`;
 
 export function ProgressProvider({ children }) {
-  const [studentProgress, setStudentProgress] = useState({});
+  // Synchronous boot from anon cache to avoid a visible 0-reset before hydrate completes
+  const bootProgress = (() => {
+    try {
+      const raw = localStorage.getItem(storageKeyFor(null)); // ':anon'
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  })();
+  const [studentProgress, setStudentProgress] = useState(bootProgress);
   const [loading, setLoading] = useState(true);
   const [firstHydrate, setFirstHydrate] = useState(true);
   const { user, isSupabaseConfigured } = useAuth();
@@ -42,24 +51,62 @@ export function ProgressProvider({ children }) {
               console.warn('Failed to load progress from DB:', error.message);
             }
             if (data?.data) {
-              setStudentProgress(data.data || {});
+              // Merge policy: prefer the richer of DB vs local caches to prevent resets
+              const dbData = data.data || {};
+              const userKey = storageKeyFor(user);
+              const anonKey = storageKeyFor(null);
+              let localBest = null;
+              try { const rawUser = localStorage.getItem(userKey); if (rawUser) localBest = JSON.parse(rawUser); } catch {}
+              if (!localBest) { try { const rawAnon = localStorage.getItem(anonKey); if (rawAnon) localBest = JSON.parse(rawAnon); } catch {} }
+              const dbXP = calcXP(dbData);
+              const localXP = calcXP(localBest);
+              const best = (localXP > dbXP) ? (localBest || dbData) : dbData;
+              setStudentProgress(best);
               // refresh local cache as backup
-              try { localStorage.setItem(storageKeyFor(user), JSON.stringify(data.data || {})); } catch {}
+              try { localStorage.setItem(userKey, JSON.stringify(best)); } catch {}
+              try { localStorage.setItem(anonKey, JSON.stringify(best)); } catch {}
+              // If local was richer than DB, upsert back to DB to avoid future downgrades
+              if (localXP > dbXP) {
+                try {
+                  await supabase.from('student_progress').upsert({ user_id: user.id, data: best }, { onConflict: 'user_id' });
+                } catch {}
+              }
             } else {
               // no row yet on DB; try local cache before starting empty
-              const raw = localStorage.getItem(storageKeyFor(user));
-              if (raw) {
-                try { setStudentProgress(JSON.parse(raw)); }
+              const userKey = storageKeyFor(user);
+              const anonKey = storageKeyFor(null);
+              const rawUser = localStorage.getItem(userKey);
+              const rawAnon = localStorage.getItem(anonKey);
+              if (rawUser) {
+                try { setStudentProgress(JSON.parse(rawUser)); }
                 catch { setStudentProgress({}); }
+              } else if (rawAnon) {
+                // Migrate anonymous progress to this logged-in user
+                try {
+                  const anonData = JSON.parse(rawAnon);
+                  setStudentProgress(anonData);
+                  // Save under user key immediately and clear anon to avoid future resets
+                  try { localStorage.setItem(userKey, JSON.stringify(anonData)); } catch {}
+                  try { localStorage.removeItem(anonKey); } catch {}
+                  // Also create the DB row now so future hydrates pull from DB
+                  try { await supabase.from('student_progress').upsert({ user_id: user.id, data: anonData }, { onConflict: 'user_id' }); } catch {}
+                } catch {
+                  setStudentProgress({});
+                }
               } else {
                 setStudentProgress({});
               }
             }
           }
         } else {
-          // Demo/local mode
-          const raw = localStorage.getItem(storageKeyFor(user));
-          if (raw) setStudentProgress(JSON.parse(raw));
+          // Demo/local mode (or auth not ready yet): prefer anon cache synchronously
+          const anonRaw = localStorage.getItem(storageKeyFor(null));
+          if (anonRaw) {
+            try { setStudentProgress(JSON.parse(anonRaw)); } catch { /* noop */ }
+          } else {
+            const raw = localStorage.getItem(storageKeyFor(user));
+            if (raw) setStudentProgress(JSON.parse(raw));
+          }
         }
       } catch (e) {
         console.warn('Progress hydrate error:', e.message);
@@ -126,6 +173,14 @@ export function ProgressProvider({ children }) {
     setStudentProgress((prev) => {
       const curr = prev[subjectKey] || { games: 0, quizzes: 0 };
       const next = { ...prev, [subjectKey]: { ...curr, ...partial } };
+      // Synchronous local backup to survive immediate refresh/navigation
+      try {
+        const key = storageKeyFor(user);
+        localStorage.setItem(key, JSON.stringify(next));
+        // Also mirror to anon cache so early-hydrate (before auth) sees latest
+        const anonKey = storageKeyFor(null);
+        localStorage.setItem(anonKey, JSON.stringify(next));
+      } catch {}
       return next;
     });
   };

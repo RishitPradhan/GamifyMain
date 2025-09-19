@@ -307,6 +307,16 @@ function LandingPage() {
   const { t, currentLanguage, changeLanguage, languages } = useLanguage();
   const navigate = useNavigate();
 
+  // Background video refs and helpers (must live in LandingPage scope)
+  const videoRef = React.useRef(null);
+  const POSTER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%231a0b2e"/><stop offset="50%" stop-color="%230f3460"/><stop offset="100%" stop-color="%237209b7"/></linearGradient></defs><rect width="100%" height="100%" fill="url(%23g)"/></svg>';
+  const onVideoLoaded = () => {
+    const v = videoRef.current;
+    if (v) {
+      try { const p = v.play(); if (p && typeof p.catch === 'function') p.catch(()=>{}); } catch {}
+    }
+  };
+
   const handleGetStarted = () => {
     if (isAuthenticated) {
       navigate('/home');
@@ -333,6 +343,9 @@ function LandingPage() {
           playsInline
           preload="auto"
           className="background-video"
+          ref={videoRef}
+          poster={POSTER}
+          onLoadedData={onVideoLoaded}
         >
           <source src="/intro.mp4" type="video/mp4" />
           Your browser does not support the video tag.
@@ -513,7 +526,7 @@ function LandingPage() {
             transition={{ duration: 0.8, delay: 1.2 }}
           >
             <motion.button
-              className="pixel-btn pixel-btn-primary"
+              className="start-btn"
               onClick={handleGetStarted}
               whileHover={{ 
                 scale: 1.08, 
@@ -523,7 +536,7 @@ function LandingPage() {
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.2 }}
             >
-              🎮 START ADVENTURE
+              ▶ Start Adventure
             </motion.button>
             
             <motion.a

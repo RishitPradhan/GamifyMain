@@ -18,6 +18,7 @@ export default function QnA() {
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [search, setSearch] = useState('');
+  const [userNames, setUserNames] = useState({}); // cache of user_id -> display name
 
   const canPost = !!user && isSupabaseConfigured;
 
@@ -55,7 +56,22 @@ export default function QnA() {
       .select('id, user_id, title, body, subject, answers_count, created_at')
       .order('created_at', { ascending: false })
       .limit(50);
-    if (!error) setQuestions(data || []);
+    if (!error) {
+      setQuestions(data || []);
+      // fetch display names for askers
+      const ids = Array.from(new Set((data || []).map(q => q.user_id).filter(Boolean)));
+      if (ids.length) {
+        try {
+          const { data: namesData } = await supabase
+            .from('leaderboard')
+            .select('user_id, display_name')
+            .in('user_id', ids);
+          const map = { ...userNames };
+          (namesData || []).forEach(r => { map[r.user_id] = r.display_name || map[r.user_id]; });
+          setUserNames(map);
+        } catch {}
+      }
+    }
     setLoadingList(false);
   };
 
@@ -66,7 +82,22 @@ export default function QnA() {
       .select('id, user_id, body, created_at')
       .eq('question_id', question_id)
       .order('created_at', { ascending: true });
-    if (!error) setSelected((s) => s ? { ...s, answers: data || [] } : s);
+    if (!error) {
+      setSelected((s) => s ? { ...s, answers: data || [] } : s);
+      // fetch display names for answerers
+      const ids = Array.from(new Set((data || []).map(a => a.user_id).filter(Boolean)));
+      if (ids.length) {
+        try {
+          const { data: namesData } = await supabase
+            .from('leaderboard')
+            .select('user_id, display_name')
+            .in('user_id', ids);
+          const map = { ...userNames };
+          (namesData || []).forEach(r => { map[r.user_id] = r.display_name || map[r.user_id]; });
+          setUserNames(map);
+        } catch {}
+      }
+    }
   };
 
   useEffect(() => {
@@ -152,6 +183,13 @@ export default function QnA() {
   const openQuestion = async (q) => {
     setSelected({ ...q, answers: [] });
     await loadAnswers(q.id);
+  };
+
+  const nameFor = (uid) => {
+    if (!uid) return 'Unknown';
+    if (userNames[uid]) return userNames[uid];
+    if (user && uid === user.id) return user.user_metadata?.full_name || user.email?.split('@')[0] || 'You';
+    return `User ${String(uid).slice(0, 6)}`;
   };
 
   return (
@@ -243,6 +281,7 @@ export default function QnA() {
                     <div style={{ fontWeight: 800, marginBottom: 2, color:'#e9d5ff' }}>{q.title}</div>
                     <div style={{ display:'flex', gap:8, fontSize:12, opacity:0.85 }}>
                       {q.subject && <span style={{ padding:'2px 8px', borderRadius: 999, background:'rgba(244,114,182,0.25)', border:'1px solid rgba(244,114,182,0.45)', color:'#fff' }}>#{q.subject}</span>}
+                      <span>by {nameFor(q.user_id)}</span>
                       <span>{(q.answers_count||0)} answers</span>
                       <span>{new Date(q.created_at).toLocaleString()}</span>
                     </div>
@@ -267,6 +306,7 @@ export default function QnA() {
           </div>
           <div style={{ opacity: 0.95, marginTop: 8, whiteSpace: 'pre-wrap' }}>{selected.body}</div>
           <div style={{ marginTop: 12, display: 'flex', gap: 8, opacity: 0.8, fontSize: 12 }}>
+            <span>Asked by {nameFor(selected.user_id)}</span>
             <span>{new Date(selected.created_at).toLocaleString()}</span>
           </div>
 
@@ -277,7 +317,7 @@ export default function QnA() {
                 {selected.answers.map(a => (
                   <div key={a.id} style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(244,114,182,0.35)', background:'rgba(2,6,23,0.45)', color:'#fff' }}>
                     <div style={{ whiteSpace: 'pre-wrap' }}>{a.body}</div>
-                    <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>{new Date(a.created_at).toLocaleString()}</div>
+                    <div style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>Answered by {nameFor(a.user_id)} • {new Date(a.created_at).toLocaleString()}</div>
                   </div>
                 ))}
               </div>

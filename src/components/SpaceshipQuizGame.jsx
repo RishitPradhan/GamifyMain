@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useProgress } from '../contexts/ProgressContext';
 
 // Pixelated CSS styles
 const pixelStyles = `
@@ -112,6 +113,7 @@ if (typeof document !== 'undefined') {
 }
 
 const SpaceshipQuizGame = () => {
+  const { studentProgress, updateProgress } = useProgress();
   // Game state
   const [gameStarted, setGameStarted] = useState(false);
   const [gameWon, setGameWon] = useState(false);
@@ -130,6 +132,7 @@ const SpaceshipQuizGame = () => {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [quizResult, setQuizResult] = useState(null);
+  const rewardedRef = useRef(false);
   
   const gameRef = useRef(null);
   const animationRef = useRef(null);
@@ -219,6 +222,18 @@ const SpaceshipQuizGame = () => {
       correct: 0
     }
   ];
+
+  // Award quiz XP (science) on win, persist through ProgressContext (writes to Supabase/localStorage)
+  useEffect(() => {
+    if (gameWon && !rewardedRef.current) {
+      try {
+        const curr = studentProgress?.science?.quizzes || 0;
+        const next = Math.min(100, curr + 1);
+        updateProgress('science', { quizzes: next });
+      } catch {}
+      rewardedRef.current = true;
+    }
+  }, [gameWon, studentProgress, updateProgress]);
 
   // Handle keyboard input
   const handleKeyDown = useCallback((e) => {

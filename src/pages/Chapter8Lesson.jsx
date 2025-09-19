@@ -740,6 +740,21 @@ export default function ForceLawsOfMotionNotes() {
               <div style={{ marginBottom: "40px" }}>
                 <LawsOfMotionGame />
               </div>
+              {/* Insert moved Bonus Game (mid-page) */}
+              <div style={{ marginBottom: "24px", background: "#28104a", border: "1px solid #7c3aed", borderRadius: 6, padding: 10 }}>
+                <h3 className="pixel-text" style={{ color: "#9b59b6", textAlign: "center", marginBottom: 8 }}>🎮 Bonus Game</h3>
+                <div style={{ color: "#c4b5fd", marginBottom: 8, textAlign: "center" }}>
+                  Quick reflex challenge: apply force ideas to win! Try for a perfect run.
+                </div>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <iframe
+                    title="Wordwall Bonus Game"
+                    src="https://wordwall.net/embed/42724b148fc54195800c8452732e8041?themeId=22&templateId=71&fontStackId=0"
+                    style={{ width: "100%", maxWidth: 800, height: 380, border: 0, borderRadius: 6 }}
+                    allowFullScreen
+                  />
+                </div>
+              </div>
             </>
           )}
           {c.key === "firstlaw" && (
@@ -769,6 +784,21 @@ export default function ForceLawsOfMotionNotes() {
               </div>
               <div style={{ marginBottom: "40px" }}>
                 <MotionSimulatorGame />
+              </div>
+              {/* Insert moved Bonus Game 2 (mid-page) */}
+              <div style={{ marginBottom: "24px", background: "#28104a", border: "1px solid #7c3aed", borderRadius: 6, padding: 10 }}>
+                <h3 className="pixel-text" style={{ color: "#9b59b6", textAlign: "center", marginBottom: 8 }}>🎯 Challenge Game</h3>
+                <div style={{ color: "#c4b5fd", marginBottom: 8, textAlign: "center" }}>
+                  Momentum master! Balance mass and acceleration to score high.
+                </div>
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <iframe
+                    title="Wordwall Bonus Game 2"
+                    src="https://wordwall.net/embed/ef950fa4eb95459abe38508faac654bc?themeId=1&templateId=3&fontStackId=0"
+                    style={{ width: "100%", maxWidth: 800, height: 380, border: 0, borderRadius: 6 }}
+                    allowFullScreen
+                  />
+                </div>
               </div>
             </>
           )}

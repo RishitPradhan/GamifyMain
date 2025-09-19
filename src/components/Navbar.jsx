@@ -14,6 +14,11 @@ export default function Navbar() {
     })() || 'student';
     return role === 'teacher' ? '/teacher-home' : '/home';
   };
+  // Determine role to conditionally show Teacher link
+  const role = user?.user_metadata?.role || (function(){
+    try { return JSON.parse(localStorage.getItem('demo_user')||'null')?.user_metadata?.role } catch { return null; }
+  })() || 'student';
+  const isTeacher = role === 'teacher';
   const homePath = resolveHomePath();
   return (
     <header className="app-navbar">
@@ -35,20 +40,30 @@ export default function Navbar() {
             Home
           </NavLink>
           <NavLink
-            to="/dashboard"
+            to="/qna"
             className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
           >
-            Teacher
+            Q&A
           </NavLink>
+          <NavLink
+            to="/profile"
+            className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+          >
+            Profile
+          </NavLink>
+          {isTeacher && (
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+            >
+              Teacher
+            </NavLink>
+          )}
         </nav>
 
         <div className="nav-actions">
           <BackButton />
           <TranslatorWidget />
-          <Link to="/profile" className="profile-btn" aria-label="Profile">
-            <span className="avatar" aria-hidden>👤</span>
-            <span className="profile-text">Profile</span>
-          </Link>
           <button
             className="logout-btn"
             title="Logout"

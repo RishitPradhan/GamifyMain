@@ -57,8 +57,10 @@ export default function Leaderboard() {
           const data = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('student_progress_')) {
-              const userKey = key.replace('student_progress_', '');
+            if (key && (key.startsWith('student_progress_') || key.startsWith('student_progress:'))) {
+              const userKey = key
+                .replace('student_progress_', '')
+                .replace('student_progress:', '');
               const p = readJSON(key, {});
               const xp = calcXP(p);
               const userInfo = readJSON(`user_${userKey}`, null);
@@ -130,7 +132,7 @@ export default function Leaderboard() {
             {players.length === 0 ? (
               <div className="lb-empty">No players yet. Start learning to climb the ranks!</div>
             ) : players.map((p, i) => (
-              <div className={`lb-row ${i < 3 ? 'top' : ''} ${(user && p.user_id && user.id === p.user_id) ? 'me' : ''}`} key={p.user_id || p.name}>
+              <div className={`lb-row ${i < 3 ? 'top' : ''} ${(user && p.user_id && user.id === p.user_id) ? 'me' : ''}`} key={p.user_id || `${p.name}-${i}`}>
                 <span className="lb-rank">{i + 1}</span>
                 <span className="lb-name">
                   {/* Top 3 badges: 1st -> 24.png, 2nd -> 25.png, 3rd -> 26.png */}

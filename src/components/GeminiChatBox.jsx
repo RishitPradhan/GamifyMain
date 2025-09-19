@@ -13,6 +13,10 @@ const GeminiChatbot = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Voice UX
+  const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const recognitionRef = useRef(null);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [winPos, setWinPos] = useState({ left: 0, top: 0 });
   const messagesEndRef = useRef(null);
@@ -43,6 +47,64 @@ const GeminiChatbot = () => {
       console.log('[GeminiChatbot] mounted, key:', masked);
     } catch (_) {}
   }, []);
+
+  // Initialize Web Speech API (speech-to-text) if available
+  useEffect(() => {
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+      const rec = new SR();
+      rec.lang = (navigator.language || 'en-US');
+      rec.continuous = true;
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.onresult = (e) => {
+        let transcript = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const res = e.results[i];
+          if (res.isFinal) transcript += res[0].transcript;
+        }
+        if (transcript) {
+          setInputValue((prev) => (prev ? prev + ' ' : '') + transcript.trim());
+        }
+      };
+      rec.onend = () => setIsListening(false);
+      rec.onerror = () => setIsListening(false);
+      recognitionRef.current = rec;
+    } catch (_) {}
+  }, []);
+
+  const toggleMic = () => {
+    const rec = recognitionRef.current;
+    if (!rec) {
+      alert('Voice input is not supported in this browser. Try Chrome or Edge.');
+      return;
+    }
+    try {
+      if (!isListening) {
+        rec.start();
+        setIsListening(true);
+      } else {
+        rec.stop();
+        setIsListening(false);
+      }
+    } catch (_) {}
+  };
+
+  // Text-to-speech for assistant replies
+  const speak = (text) => {
+    try {
+      if (!voiceEnabled) return;
+      if (!window.speechSynthesis) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = (navigator.language || 'en-US');
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch (_) {}
+  };
 
   // Show help popup after 3 seconds, hide after 5 seconds
   useEffect(() => {
@@ -203,6 +265,8 @@ const GeminiChatbot = () => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      // Voice out
+      speak(aiResponse);
     } catch (error) {
       console.error('Error calling Gemini API:', error);
       const errorMessage = {
@@ -393,60 +457,55 @@ const GeminiChatbot = () => {
               document.addEventListener('touchend', onTouchEnd);
             }}
             style={{
-            background: 'linear-gradient(90deg, rgba(124,58,237,0.28), rgba(236,72,153,0.22), rgba(34,211,238,0.18))',
-            color: '#EDE9FE',
-            padding: '10px 12px',
-            borderRadius: '18px 18px 0 0',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            boxShadow: 'inset 0 -1px 0 rgba(124,58,237,0.35)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: 26,
-                height: 26,
-                background: 'radial-gradient(80% 80% at 30% 30%, #a78bfa, #7c3aed)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="5" r="3"/>
-                  <rect x="5" y="9" width="14" height="10" rx="5"/>
-                </svg>
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 12, letterSpacing: 0.3 }}>AI Assistant</h3>
-                <p style={{ margin: 0, color: '#c4b5fd', fontSize: 10 }}>Prompt me anything</p>
-              </div>
+              background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.28), rgba(236, 72, 153, 0.22), rgba(34, 211, 238, 0.18))',
+              color: '#EDE9FE',
+              padding: '10px 12px',
+              borderRadius: '18px 18px 0 0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 700, letterSpacing: 0.4 }}>AI Assistant</span>
+              <span style={{ opacity: 0.7, fontSize: 12 }}>Gemini</span>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              style={{
-                color: '#e9d5ff',
-                background: 'transparent',
-                border: 'none',
-                padding: 2,
-                borderRadius: '50%',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = '#fff';
-                e.target.style.backgroundColor = 'rgba(124,58,237,0.35)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = '#e9d5ff';
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Mic toggle */}
+              <button
+                onClick={toggleMic}
+                className="btn"
+                title={isListening ? 'Stop listening' : 'Start voice input'}
+                style={{
+                  background: isListening ? '#ef4444' : '#22c55e',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '6px 10px',
+                }}
+              >
+                {isListening ? 'Stop 🎙️' : 'Speak 🎤'}
+              </button>
+              {/* Voice output toggle */}
+              <button
+                onClick={() => setVoiceEnabled((v) => !v)}
+                className="btn"
+                title={voiceEnabled ? 'Mute voice output' : 'Enable voice output'}
+                style={{
+                  background: voiceEnabled ? '#3b82f6' : '#64748b',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '6px 10px',
+                }}
+              >
+                {voiceEnabled ? 'Voice 🔊' : 'Voice 🔇'}
+              </button>
+              <button onClick={() => setIsOpen(false)} className="btn" style={{ background: '#334155', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 10px' }}>
+                Close
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -457,14 +516,14 @@ const GeminiChatbot = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            background: 'linear-gradient(180deg, rgba(0,0,0,0.35), rgba(17,12,28,0.35), rgba(2,6,23,0.3))'
+            background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(17, 12, 28, 0.35), rgba(2, 6, 23, 0.3))',
           }}>
             {messages.map((message, index) => (
               <div
                 key={index}
                 style={{
                   display: 'flex',
-                  justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start'
+                  justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
                 }}
               >
                 <div style={{
@@ -472,7 +531,7 @@ const GeminiChatbot = () => {
                   alignItems: 'flex-start',
                   gap: '8px',
                   maxWidth: '100%',
-                  flexDirection: message.role === 'user' ? 'row-reverse' : 'row'
+                  flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
                 }}>
                   {/* Avatars removed in compact mode */}
                   <div style={{
@@ -481,13 +540,13 @@ const GeminiChatbot = () => {
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     background: message.role === 'user'
                       ? 'linear-gradient(135deg, #7c3aed, #ec4899)'
-                      : 'linear-gradient(135deg, rgba(124,58,237,0.18), rgba(236,72,153,0.14), rgba(34,211,238,0.12))',
+                      : 'linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(236, 72, 153, 0.14), rgba(34, 211, 238, 0.12))',
                     color: message.role === 'user' ? '#0b0720' : '#EDE9FE',
-                    border: message.role === 'user' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(124, 58, 237, 0.28)',
+                    border: message.role === 'user' ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(124, 58, 237, 0.28)',
                     marginLeft: message.role === 'user' ? '8px' : '0',
                     maxWidth: '100%',
                     wordBreak: 'break-word',
-                    overflowWrap: 'anywhere'
+                    overflowWrap: 'anywhere',
                   }}>
                     <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                       {message.content}
@@ -497,7 +556,6 @@ const GeminiChatbot = () => {
                 </div>
               </div>
             ))}
-            
             {isLoading && (
               <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -508,21 +566,21 @@ const GeminiChatbot = () => {
                     background: 'linear-gradient(90deg, #60a5fa, #2563eb)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
                   }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'white' }}>
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                      <circle cx="12" cy="5" r="2"/>
-                      <path d="M12 7v4"/>
-                      <line x1="8" y1="16" x2="8" y2="16"/>
-                      <line x1="16" y1="16" x2="16" y2="16"/>
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <circle cx="12" cy="5" r="2" />
+                      <path d="M12 7v4" />
+                      <line x1="8" y1="16" x2="8" y2="16" />
+                      <line x1="16" y1="16" x2="16" y2="16" />
                     </svg>
                   </div>
                   <div style={{
-                    background: 'linear-gradient(135deg, rgba(124,58,237,0.16), rgba(236,72,153,0.14))',
+                    background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.16), rgba(236, 72, 153, 0.14))',
                     padding: '12px 16px',
                     borderRadius: '16px',
-                    border: '1px solid rgba(124, 58, 237, 0.3)'
+                    border: '1px solid rgba(124, 58, 237, 0.3)',
                   }}>
                     <div style={{ display: 'flex', gap: '4px' }}>
                       <div style={{
@@ -530,21 +588,21 @@ const GeminiChatbot = () => {
                         height: '8px',
                         backgroundColor: '#a78bfa',
                         borderRadius: '50%',
-                        animation: 'bounce 1s infinite'
+                        animation: 'bounce 1s infinite',
                       }}></div>
                       <div style={{
                         width: '8px',
                         height: '8px',
                         backgroundColor: '#60a5fa',
                         borderRadius: '50%',
-                        animation: 'bounce 1s infinite 0.1s'
+                        animation: 'bounce 1s infinite 0.1s',
                       }}></div>
                       <div style={{
                         width: '8px',
                         height: '8px',
                         backgroundColor: '#60a5fa',
                         borderRadius: '50%',
-                        animation: 'bounce 1s infinite 0.2s'
+                        animation: 'bounce 1s infinite 0.2s',
                       }}></div>
                     </div>
                   </div>
@@ -556,67 +614,36 @@ const GeminiChatbot = () => {
 
           {/* Input */}
           <div style={{
-            padding: '8px',
-            background: 'linear-gradient(90deg, rgba(0,0,0,0.85), rgba(17,12,28,0.85))',
-            borderRadius: '0 0 18px 18px',
-            borderTop: '1px solid rgba(124, 58, 237, 0.28)',
-            maxWidth: '100%',
-            overflow: 'hidden'
+            padding: 10,
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'rgba(0, 0, 0, 0.2)',
           }}>
-            <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <textarea
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
+                onKeyDown={handleKeyPress}
+                placeholder={isListening ? 'Listening... speak your message' : 'Type your message'}
                 style={{
                   flex: 1,
-                  background: 'rgba(124, 58, 237, 0.10)',
+                  minHeight: 44,
+                  maxHeight: 120,
+                  resize: 'vertical',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
                   color: '#EDE9FE',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
-                  borderRadius: '12px',
-                  padding: '8px 10px',
-                  outline: 'none',
-                  resize: 'none',
-                  fontSize: '12px',
-                  fontFamily: 'inherit',
-                  wordBreak: 'break-word',
-                  overflowWrap: 'anywhere'
+                  borderRadius: 12,
+                  padding: '10px 12px',
                 }}
-                rows="2"
-                disabled={isLoading}
-                wrap="soft"
               />
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !inputValue.trim()}
-                style={{
-                  background: isLoading || !inputValue.trim() 
-                    ? 'linear-gradient(135deg, rgba(124,58,237,0.25), rgba(236,72,153,0.22))' 
-                    : 'linear-gradient(135deg, #7c3aed, #ec4899)',
-                  color: 'white',
-                  padding: '8px 10px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  cursor: isLoading || !inputValue.trim() ? 'not-allowed' : 'pointer',
-                  opacity: isLoading || !inputValue.trim() ? 0.5 : 1,
-                  transition: 'all 0.2s ease',
-                  transform: 'scale(1)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoading && inputValue.trim()) {
-                    e.target.style.transform = 'scale(1.05)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'scale(1)';
-                }}
+                className="btn"
+                style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 14px' }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22,2 15,22 11,13 2,9 22,2"/>
-                </svg>
+                {isLoading ? 'Sending…' : 'Send'}
               </button>
             </div>
             <p style={{ fontSize: 9, color: '#a78bfa', margin: '4px 0 0 0', textAlign: 'center' }}>Powered by Google Gemini AI</p>

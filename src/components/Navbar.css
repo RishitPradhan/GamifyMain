@@ -56,11 +56,11 @@
 
 .nav-links {
   display: none;
-  gap: 12px;
+  gap: 28px; /* increased spacing between links (e.g., Home and Q&A) */
 }
 
 @media (min-width: 720px) {
-  .nav-links { display: flex; gap: 12px; align-items: center; }
+  .nav-links { display: flex; gap: 28px; align-items: center; margin-left: 28px; /* spacing away from brand */ }
 }
 
 .nav-link {
@@ -145,7 +145,8 @@
 
 /* Enhanced hover effects */
 .brand:hover {
-  transform: scale(1.05);
+  /* Preserve the translateX used for centering to avoid jump/glitch on hover */
+  transform: translateX(-50%) scale(1.05);
 }
 
 .brand:hover .brand-logo { box-shadow: none; }

@@ -5,42 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React</title>
+    <!-- Preload background videos to speed up first paint (use as=fetch for broad browser support) -->
+    <link rel="preload" as="fetch" href="/intro.mp4" type="video/mp4" crossorigin="anonymous" />
+    <link rel="preload" as="fetch" href="/login.mp4" type="video/mp4" crossorigin="anonymous" />
+    <link rel="preload" as="fetch" href="/signup.mp4" type="video/mp4" crossorigin="anonymous" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    
-    <!-- Google Translate Script -->
-    <script type="text/javascript">
-      function googleTranslateElementInit() {
-        try {
-          new google.translate.TranslateElement({
-            pageLanguage: 'en',
-            includedLanguages: 'en,hi,bn,te,mr,ta,ur,gu,kn,ml,or,pa,ne,as',
-            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-          }, 'google_translate_element');
-          
-          // Signal that Google Translate is ready
-          window.googleTranslateReady = true;
-          window.dispatchEvent(new CustomEvent('googleTranslateReady'));
-        } catch (error) {
-          console.error('Google Translate initialization failed:', error);
-          window.googleTranslateBlocked = true;
-          window.dispatchEvent(new CustomEvent('googleTranslateBlocked'));
-        }
-      }
-      
-      // Handle script load errors
-      function handleScriptError() {
-        console.warn('Google Translate script blocked by ad blocker or network');
-        window.googleTranslateBlocked = true;
-        window.dispatchEvent(new CustomEvent('googleTranslateBlocked'));
-      }
-    </script>
-    <script 
-      type="text/javascript" 
-      src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-      onerror="handleScriptError()"
-    ></script>
   </body>
 </html>
